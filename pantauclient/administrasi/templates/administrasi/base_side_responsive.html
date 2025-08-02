@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="/static/css/style-devmode.css">
+    <style>
+        #sidebar.collapsed {
+            width: 5rem; /* setara w-20 */
+            padding-left: 0.5rem; /* setara px-2 */
+            padding-right: 0.5rem; /* setara px-2 */
+        }
+        #sidebar.collapsed .sidebar-logo {
+            width: 3rem; /* setara w-12 */
+        }
+        #sidebar.collapsed .nav-text,
+        #sidebar.collapsed .collapse-text {
+            display: none;
+        }
+        #sidebar.collapsed .nav-item {
+            justify-content: center;
+        }
+        #sidebar.collapsed .collapse-btn {
+            justify-content: center;
+        }
+        #sidebar.collapsed .collapse-icon {
+            transform: rotate(180deg);
+        }
+
+        /* Tooltip hover logic */
+        .tooltip {
+            position: absolute;
+            left: 100%;
+            margin-left: 1rem;
+            padding: 0.25rem 0.5rem;
+            background-color: #3d3d3d;
+            color: white;
+            font-size: 0.875rem; /* text-sm */
+            font-weight: 600; /* semibold */
+            border-radius: 0.375rem; /* rounded-md */
+            white-space: nowrap;
+            z-index: 10;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+        }
+        #sidebar.collapsed .nav-item:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="w-screen h-screen">
+    {% csrf_token %}
+    <div class="flex h-screen w-screen overflow-hidden">
+        
+        <div id="menu-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden lg:hidden"></div>
+
+        <div id="sidebar" class="fixed lg:relative inset-y-0 left-0 w-64 h-full px-3 bg-white z-30 transform -translate-x-full lg:translate-x-0 transition-all duration-300 ease-in-out flex flex-col">
+            
+            <div class="flex-grow">
+                <div class="flex">
+                    <a class="mx-auto my-3" href="">
+                        <img src="{% static "icon/logosmp.png" %}" alt="logo" class="w-16 mx-auto transition-all duration-300 sidebar-logo">
+                    </a>
+                </div>
+
+                <div class="my-4 w-full h-fit flex flex-col gap-3 text-xl font-semibold text-[#3d3d3d]">
+                    {% with url_name=request.resolver_match.url_name %}
+                    
+                    <a class="flex flex-row w-full px-1 justify-start items-center h-fit rounded-xl transition-all duration-200 relative nav-item
+                        {% if url_name == 'index' %} text-white bg-[#84A7FF] {% else %} shadow-md hover:bg-[#D8ECFF] {% endif %}" 
+                        href="{% url 'index' %}">
+                        <img src="{% if url_name == 'index' %}{% static 'icon/dashboard-on.svg' %}{% else %}{% static 'icon/dashboard-off.svg' %}{% endif %}" alt="board">
+                        <p class="ms-2 nav-text">DASHBOARD</p>
+                        <span class="tooltip">DASHBOARD</span>
+                    </a>
+
+                    <a class="flex flex-row w-full px-1 justify-start items-center h-fit rounded-xl transition-all duration-200 relative nav-item
+                        {% if url_name == 'presensi' %} text-white bg-[#84A7FF] {% else %} shadow-md hover:bg-[#D8ECFF] {% endif %}" 
+                        href="{% url 'presensi' %}">
+                        <img src="{% if url_name == 'presensi' %}{% static 'icon/presensi-on.svg' %}{% else %}{% static 'icon/presensi-off.svg' %}{% endif %}" alt="pre">
+                        <p class="ms-2 nav-text">PRESENSI</p>
+                        <span class="tooltip">PRESENSI</span>
+                    </a>
+                    
+                    <a class="flex flex-row w-full px-1 justify-start items-center h-fit rounded-xl transition-all duration-200 relative nav-item
+                        {% if url_name == 'rekap' %} text-white bg-[#84A7FF] {% else %} shadow-md hover:bg-[#D8ECFF] {% endif %}" 
+                        href="{% url 'rekap' %}">
+                        <img src="{% if url_name == 'rekap' %}{% static 'icon/rekap-on.svg' %}{% else %}{% static 'icon/rekap-off.svg' %}{% endif %}" alt="res">
+                        <p class="ms-2 nav-text">REKAP</p>
+                        <span class="tooltip">REKAP</span>
+                    </a>
+
+                    <a class="flex flex-row w-full px-1 justify-start items-center h-fit rounded-xl transition-all duration-200 relative nav-item
+                        {% if url_name == 'pengaturan' %} text-white bg-[#84A7FF] {% else %} shadow-md hover:bg-[#D8ECFF] {% endif %}" 
+                        href="{% url 'pengaturan' %}">
+                        <img src="{% if url_name == 'pengaturan' %}{% static 'icon/pengaturan-on.svg' %}{% else %}{% static 'icon/pengaturan-off.svg' %}{% endif %}" alt="set">
+                        <p class="ms-2 nav-text">PENGATURAN</p>
+                        <span class="tooltip">PENGATURAN</span>
+                    </a>
+                    {% endwith %}
+                </div>
+            </div>
+
+            <div class="pt-4 mt-auto mb-2">
+                <button id="collapse-btn" class="flex flex-row w-full p-2 justify-start items-center h-fit rounded-xl shadow-md hover:bg-[#D8ECFF] collapse-btn">
+                    <svg id="collapse-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6 text-[#3d3d3d] transition-transform duration-300 collapse-icon">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+                    </svg>
+                    <p class="ms-2 font-semibold text-[#3d3d3d] collapse-text">Cuitkan</p>
+                </button>
+            </div>
+        </div>
+
+        <div class="w-full">
+            <div class="relative flex flex-row w-full h-16 lg:h-24 justify-between items-center bg-white px-4">
+                <button id="menu-btn" class="lg:hidden p-2 text-[#3d3d3d]">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+                <div class="absolute left-1/2 -translate-x-1/2 lg:relative lg:left-auto lg:translate-x-0 flex flex-col h-fit w-fit items-center lg:items-start lg:justify-start">
+                    <h1 class="text-xl font-semibold md:text-3xl md:font-bold text-[#3d3d3d]">{{ title }}</h1>
+                </div>
+                <div class="flex flex-row h-full w-auto items-center p-4">
+                    <img class="size-11 md:size-14" src="{% static "icon/profile.svg" %}" alt="">
+                </div>
+            </div>
+            <div class="w-full h-full p-3 bg-blue-50">
+                {% block isi %}{% endblock isi %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const menuBtn = document.getElementById('menu-btn');
+        const sidebarMobile = document.getElementById('sidebar');
+        const overlay = document.getElementById('menu-overlay');
+        function toggleMenu() {
+            sidebarMobile.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+        menuBtn.addEventListener('click', toggleMenu);
+        overlay.addEventListener('click', toggleMenu);
+    </script>
+    
+    <script>
+        const sidebar = document.getElementById('sidebar');
+        const collapseBtn = document.getElementById('collapse-btn');
+
+        collapseBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+        });
+    </script>
+</body>
+</html>

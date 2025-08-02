@@ -1,0 +1,18 @@
+{
+  "name": "pantauclient",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "pro": "npx tailwindcss -i ./static/css/input.css -o ./static/css/style-core.css --minify",
+    "dev": "npx tailwindcss -i ./static/css/input.css -o ./static/css/style-devmode.css --watch",
+    "start": "concurrently \"python manage.py runserver\" \"npm run watch:css\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@tailwindcss/cli": "^4.1.11",
+    "tailwindcss": "^4.1.11"
+  }
+}
