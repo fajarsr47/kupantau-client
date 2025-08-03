@@ -1,4 +1,91 @@
 {% extends "administrasi/base.html" %}{% block isi %}
-    <div class="h-16 w-full bg-white rounded-2xl"></div>
-    <h1 class="text-3xl font-serif ">presensi</h1>
+    <div class=" w-full h-[200%] md:h-full grid grid-cols-1 md:grid-cols-2 xl:grid-cols-7 xl:grid-rows-6 gap-2.5 xl:gap-5">
+        <div class="bg-white p-3 md:col-span-2 xl:col-span-3 xl:row-span-4 rounded-2xl shadow-sm md:shadow-xl">
+            <div class="w-full h-72 bg-amber-300 rounded-2xl"></div>
+        </div>
+        <div class="bg-white p-4 xl:row-start-5 xl:col-span-3 xl:row-span-3 rounded-2xl shadow-sm md:shadow-xl">
+            <div class="w-full h-3.5 flex flex-row items-center justify-between gap-2">
+                <h3 class="whitespace-nowrap" >wajah terdeteksi</h3>
+                <div class="bg-gray-700 h-1 w-full rounded-full"></div>
+            </div>
+            <div class="w-full h-full overflow-y-scroll ">
+                <table class="mt-2.5 w-full border-collapse overflow-hidden">
+                    <thead>
+                        <tr>
+                            <th class="p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">No</th>
+                            <th class="p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">Nama</th>
+                            <th class="p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">Persentase</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="p-3 text-left">1</td>
+                            <td class="p-3 text-left">Nama</td>
+                            <td class="p-3 text-left">80%</td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 text-left">2</td>
+                            <td class="p-3 text-left">Nama</td>
+                            <td class="p-3 text-left">78%</td>
+
+                        </tr>
+                        <tr>
+                            <td class="p-3 text-left">3</td>
+                            <td class="p-3 text-left">Nama</td>
+                            <td class="p-3 text-left">75%</td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 text-left">1</td>
+                            <td class="p-3 text-left">Nama</td>
+                            <td class="p-3 text-left">80%</td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 text-left">2</td>
+                            <td class="p-3 text-left">Nama</td>
+                            <td class="p-3 text-left">78%</td>
+
+                        </tr>
+                        <tr>
+                            <td class="p-3 text-left">3</td>
+                            <td class="p-3 text-left">Nama</td>
+                            <td class="p-3 text-left">75%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="bg-white p-4 xl:col-start-4 xl:row-start-1 xl:col-span-4 xl:row-span-7 rounded-2xl shadow-sm md:shadow-xl">
+            <div class="w-full h-3.5 flex flex-row items-center justify-between gap-2">
+                <h3 class="whitespace-nowrap" >hasil presensi</h3>
+                <div class="bg-gray-700 h-1 w-full rounded-full"></div>
+            </div>
+            <table class="mt-2.5 w-full border-collapse overflow-hidden">
+                <thead>
+                    <tr>
+                        <th class="p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">No</th>
+                        <th class="p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">Nama</th>
+                        <th class="p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">Persentase</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="p-3 text-left">1</td>
+                        <td class="p-3 text-left">Nama</td>
+                        <td class="p-3 text-left">80%</td>
+                    </tr>
+                    <tr>
+                        <td class="p-3 text-left">2</td>
+                        <td class="p-3 text-left">Nama</td>
+                        <td class="p-3 text-left">78%</td>
+
+                    </tr>
+                    <tr>
+                        <td class="p-3 text-left">3</td>
+                        <td class="p-3 text-left">Nama</td>
+                        <td class="p-3 text-left">75%</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 {% endblock isi %}
