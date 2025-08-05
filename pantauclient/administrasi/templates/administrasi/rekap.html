@@ -1,6 +1,22 @@
 {% extends "administrasi/base.html" %}{% block isi %}
-    <div class="bg-white p-3 w-full gap-3 grid grid-cols-1 grid-rows-5 md:grid-cols-2 md:grid-rows-3 xl:grid-cols-12 xl:grid-rows-1 rounded-xl shadow-md">
-        <div class="flex flex-col justify-start xl:col-span-4">
+    <div class="bg-white p-3 w-full gap-3 grid grid-cols-1 md:grid-cols-2 rounded-xl shadow-md">
+
+        
+        <div class="flex flex-col justify-start">
+            <label>Jenis Rekap</label>
+            <select id="scope" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
+                <option selected>Laporan Mendetail</option>
+                <option>Rekap Bulanan</option>
+            </select>
+        </div>
+        <div class="flex flex-col justify-start">
+            <label>Cari Siswa</label>
+            <input type="text" id="search-student" placeholder="Ketik Nama atau NIS" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
+        </div>
+    </div>
+
+    <div class="bg-white p-3 mt-3 w-full gap-3 grid grid-cols-1 grid-rows-4 md:grid-cols-2 md:grid-rows-3 xl:grid-cols-12 xl:grid-rows-1 rounded-xl shadow-md">
+        <div class="flex flex-col justify-start md:col-span-2 xl:col-span-4">
             <label>Rentang Waktu</label>
             <div class="flex items-center space-x-2">
                 <input type="date" id="start-date" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
@@ -8,7 +24,7 @@
                 <input type="date" id="end-date" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
             </div>
         </div>
-        <div class="flex flex-col justify-start xl:col-start-5 xl:col-span-2">
+        <div class="flex flex-col justify-start xl:col-start-5 xl:col-span-3">
             <label>Ruang Lingkup</label>
             <select id="scope" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
                 <option selected>Semua Kelas</option>
@@ -16,17 +32,13 @@
                 <option>Per Kelas</option>
             </select>
         </div>
-        <div class="flex flex-col justify-start xl:col-start-7 xl:col-span-2">
+        <div class="flex flex-col justify-start xl:col-start-8 xl:col-span-3">
             <label>Tingkatan</label>
             <select id="scope" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
                 <option selected>Tingkat 7</option>
                 <option>Tingkat 8</option>
                 <option>Tingkat 9</option>
             </select>
-        </div>
-        <div class="flex flex-col justify-start xl:col-start-9 xl:col-span-2">
-            <label>Cari Siswa</label>
-            <input type="text" id="search-student" placeholder="Ketik Nama atau NIS" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
         </div>
         <div class="flex justify-center items-end md:col-span-2 xl:col-start-11 xl:col-span-2">
             <button class="w-full h-fit bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 xl:py-1.5 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
@@ -40,7 +52,7 @@
 
 
 
-    <div class="bg-white w-full h-full p-3 rounded-xl shadow-md mt-3 md:mt-5 flex flex-col">
+    <div class="bg-white w-full min-h-full h-fit p-3 rounded-xl shadow-md mt-3 md:mt-5 flex flex-col">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
             <div>
                 <h2 class="text-xl font-semibold text-gray-800">Hasil Laporan</h2>
@@ -112,6 +124,114 @@
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">24 Jun 2024</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Ahmad Budiarto</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">06:55</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Hadir</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">-</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">24 Jun 2024</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Citra Lestari</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">07:15</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Terlambat</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Terlambat 15 menit</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">24 Jun 2024</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Dewi Anggraini</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">-</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Alpa</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Tanpa Keterangan</td>
+                            </tr>
+                                <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">23 Jun 2024</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Eko Prasetyo</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">-</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Sakit</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Surat Dokter</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">24 Jun 2024</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Ahmad Budiarto</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">06:55</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Hadir</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">-</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">24 Jun 2024</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Citra Lestari</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">07:15</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Terlambat</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Terlambat 15 menit</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">24 Jun 2024</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Dewi Anggraini</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">-</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Alpa</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Tanpa Keterangan</td>
+                            </tr>
+                                <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">23 Jun 2024</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Eko Prasetyo</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">-</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Sakit</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Surat Dokter</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">24 Jun 2024</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Ahmad Budiarto</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">06:55</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Hadir</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">-</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">24 Jun 2024</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Citra Lestari</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">07:15</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Terlambat</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Terlambat 15 menit</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">24 Jun 2024</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Dewi Anggraini</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">-</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Alpa</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Tanpa Keterangan</td>
+                            </tr>
+                                <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">23 Jun 2024</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Eko Prasetyo</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">-</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Sakit</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Surat Dokter</td>
+                            </tr>
                             <tr>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">24 Jun 2024</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Ahmad Budiarto</td>
