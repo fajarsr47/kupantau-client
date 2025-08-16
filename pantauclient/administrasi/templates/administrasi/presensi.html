@@ -1,11 +1,13 @@
-{% extends "administrasi/base.html" %}{% block isi %}
+{% extends "administrasi/base.html" %}
+
+{% block isi %}
     <div class=" w-full h-[200%] md:h-full grid grid-cols-1 md:grid-cols-2 xl:grid-cols-7 xl:grid-rows-6 gap-2.5 xl:gap-5">
         <div class="bg-white p-3 md:col-span-2 xl:col-span-3 xl:row-span-4 rounded-2xl shadow-sm md:shadow-xl">
             <div class="w-full h-72 bg-amber-300 rounded-2xl"></div>
         </div>
         <div class="bg-white p-4 xl:row-start-5 xl:col-span-3 xl:row-span-3 rounded-2xl shadow-sm md:shadow-xl">
             <div class="w-full h-3.5 flex flex-row items-center justify-between gap-2">
-                <h3 class="whitespace-nowrap" >wajah terdeteksi</h3>
+                <h3 class="whitespace-nowrap">wajah terdeteksi</h3>
                 <div class="bg-gray-700 h-1 w-full rounded-full"></div>
             </div>
             <div class="w-full h-full overflow-y-scroll ">
@@ -89,3 +91,7 @@
         </div>
     </div>
 {% endblock isi %}
+
+{% block extra_js %}
+
+{% endblock extra_js %}
