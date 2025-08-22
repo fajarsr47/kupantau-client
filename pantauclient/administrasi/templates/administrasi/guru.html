@@ -1,0 +1,51 @@
+{% extends "administrasi/base.html" %}
+{% load static %}
+{% block isi %}
+    <div class="h-fit w-full bg-white rounded-2xl flex flex-col py-2.5 px-3 gap-3">
+        <div class="w-full h-fit flex flex-row justify-between items-center">
+            <h2 class="text-lg font-medium">Daftar Guru dan Staff</h2>
+            <a href="{% url 'tambah_guru' %}" class="bg-sky-300 hover:bg-sky-500 text-white font-medium py-0.5 px-2 rounded-lg flex items-center space-x-1 text-sm transition-colors">
+                <img src="{% static 'icon/plus.svg' %}" alt="+">
+                <span>Tambah Guru/Staff</span>
+            </a>
+        </div>
+
+        <div class="overflow-x-auto min-w-0">
+            <table class="min-w-full divide-y divide-gray-200 table-fixed">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="w-16 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
+                        <th scope="col" class="w-32 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NIP</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
+                        <th scope="col" class="w-24 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jenis Kelamin</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mengajar</th>
+                        <th scope="col" class="w-32 px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in semua_objek %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ forloop.counter }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ item.nip }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ item.nama }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ item.profileguru.get_jenis_kelamin_display }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {% for mapel in item.mengajar.all %}
+                                {{ mapel.nama_mapel }}{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium flex flex-row items-center justify-center">
+                            <a href="{% url 'edit_guru' obj_id=item.id %}" class="flex-shrink-0 text-indigo-600 hover:text-indigo-900 hover:bg-amber-100 p-1 rounded-full">
+                                <img class="size-8" src="{% static 'icon/aksi/edit.svg' %}" alt="Edit">
+                            </a>
+                            <a href="{% url 'hapus' page='guru' obj_id=item.id %}" onclick="return confirm('Apakah Anda yakin ingin menghapus?')" class="flex-shrink-0 text-red-600 hover:text-red-900 ml-4 hover:bg-amber-100 p-1 rounded-full">
+                                <img class="size-8" src="{% static 'icon/aksi/hapus.svg' %}" alt="Hapus">
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock isi %}

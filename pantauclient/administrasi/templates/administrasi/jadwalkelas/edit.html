@@ -1,0 +1,63 @@
+{% extends "administrasi/base.html" %}
+{% load static %}
+{% block isi %}
+    <div class="bg-white p-3 w-full h-fit gap-3 rounded-xl shadow-md mb-5 flex flex-col">
+        <div class="w-full h-fit flex flex-row justify-between items-center mb-3">
+            <h2 class="text-lg font-medium">{% if obj %}Edit{% else %}Tambah{% endif %} {{ page|capfirst }}</h2>
+        </div>
+        <form method="post" id="jadwalForm">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <div class="mt-5 flex flex-row justify-end gap-3">
+                <a href="{% url page %}" class="w-fit h-8 bg-red-200 hover:bg-red-400 text-white font-medium py-4 px-8 rounded-lg flex items-center space-x-1 text-sm transition-colors">
+                    Batal
+                </a>
+                <button type="submit" class="w-fit h-8 bg-blue-400 hover:bg-blue-600 text-white font-medium py-4 px-8 rounded-lg flex items-center space-x-1 text-sm transition-colors">
+                    Simpan
+                </button>
+            </div>
+        </form>
+    </div>
+{% endblock isi %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        if ('{{ page }}' === 'jadwal') {
+            const mapelSelect = document.getElementById('id_mapel');
+            const guruSelect = document.getElementById('id_guru');
+            // Dapatkan URL yang benar dari Django
+            const getGuruUrl = "{% url 'get_guru' %}";
+
+            // Nonaktifkan dropdown guru saat halaman dimuat jika belum ada mapel yang dipilih
+            guruSelect.disabled = !mapelSelect.value;
+
+            mapelSelect.addEventListener('change', function() {
+                const mapelId = this.value;
+                guruSelect.innerHTML = '<option value="">---------</option>';
+                guruSelect.disabled = true;
+
+                if (mapelId) {
+                    // Gunakan URL yang sudah kita dapatkan
+                    fetch(`${getGuruUrl}?mapel_id=${mapelId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            data.forEach(guru => {
+                                const option = document.createElement('option');
+                                option.value = guru.id;
+                                option.textContent = guru.nama;
+                                guruSelect.appendChild(option);
+                            });
+                            guruSelect.disabled = false;
+                        });
+                }
+            });
+
+            // Jika form dibuka untuk edit, trigger event change untuk memuat guru
+            if (mapelSelect.value) {
+                mapelSelect.dispatchEvent(new Event('change'));
+            }
+        }
+    });
+</script>
+{% endblock extra_js %}

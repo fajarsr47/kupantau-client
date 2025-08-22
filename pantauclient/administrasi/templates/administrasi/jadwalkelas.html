@@ -1,0 +1,46 @@
+{% extends "administrasi/base.html" %}
+{% load static %}
+{% block isi %}
+    <div class="bg-white p-3 w-full gap-3 grid grid-cols-1 grid-rows-4 md:grid-rows-2 md:grid-cols-2 2xl:grid-rows-1 2xl:grid-cols-4 rounded-xl shadow-md">
+        {% with url_name=request.resolver_match.url_name %}
+        <a class="flex border border-gray-200 flex-row w-full px-1 justify-center items-center h-8 rounded-xl transition-all duration-200
+            {% if url_name == 'kelas' %}
+                text-[#84A7FF] bg-white border border-[#84A7FF] shadow-sm shadow-[#84A7FF]
+            {% else %}
+                shadow-md hover:bg-[#D8ECFF]
+            {% endif %}" href="{% url 'kelas' %}">
+            <p class="">kelas</p>
+        </a>
+        <a class="border border-gray-200 flex flex-row w-full px-1 justify-center items-center h-8 rounded-xl transition-all duration-200
+            {% if url_name == 'jampel' %}
+                text-[#84A7FF] bg-white border border-[#84A7FF] shadow-sm shadow-[#84A7FF]
+            {% else %}
+                shadow-md hover:bg-[#D8ECFF] hover:shadow-blue-300
+
+            {% endif %}" href="{% url 'jampel' %}">
+            <p class="">Jam Pelajaran</p>
+        </a>
+        <a class="border border-gray-200 flex flex-row w-full px-1 justify-center items-center h-8 rounded-xl transition-all duration-200
+            {% if url_name == 'mapel' %}
+                text-[#84A7FF] bg-white border border-[#84A7FF] shadow-sm shadow-[#84A7FF]
+            {% else %}
+                shadow-md hover:bg-[#D8ECFF] hover:shadow-blue-300
+
+            {% endif %}" href="{% url 'mapel' %}">
+            <p class="">Mata Pelajaran</p>
+        </a>
+        <a class="border border-gray-200 flex flex-row w-full px-1 justify-center items-center h-8 rounded-xl transition-all duration-200
+            {% if url_name == 'jadwal' %}
+                text-[#84A7FF] bg-white border border-[#84A7FF] shadow-sm shadow-[#84A7FF]
+            {% else %}
+                shadow-md hover:bg-[#D8ECFF] hover:shadow-blue-300
+
+            {% endif %}" href="{% url 'jadwal' %}">
+            <p class="">Jadwal Pelajaran</p>
+        </a>
+        {% endwith %}
+    </div>
+    <div class="w-full h-fit mt-3 md:mt-5">
+        {% block isi_kelas %}{% endblock isi_kelas %}
+    </div>
+{% endblock isi %}

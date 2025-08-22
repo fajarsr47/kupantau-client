@@ -24,6 +24,11 @@ class Hari(models.TextChoices):
     SABTU = 'Sabtu', _('Sabtu')
     MINGGU = 'Minggu', _('Minggu')
 
+#UNTUK MEMILIH ROLE
+class Role(models.TextChoices):
+    ADMIN = 'Admin', _('Admin')
+    GURU = 'Guru', _('Guru')
+
 
 class Mapel(models.Model):
     kode_mapel = models.CharField(max_length=5)
@@ -39,13 +44,14 @@ class UserGuru(models.Model):
     email = models.EmailField(_("email"), max_length=100)
     password = models.CharField(max_length=100)
     mengajar = models.ManyToManyField(Mapel, through='GuruMapel')
-    role = models.CharField(max_length=100)
+    role = models.CharField(max_length=10, choices=Role.choices)
 
     def __str__(self):
         return self.nama
 
 class ProfileGuru(models.Model):
     guru = models.OneToOneField(UserGuru, on_delete=models.CASCADE)
+    foto = models.ImageField(upload_to='foto_guru/', null=True, blank=True)
     nuptk = models.CharField(max_length=20)
     jenis_kelamin = models.CharField(max_length=1, choices=JenisKelamin.choices)
     tempat_lahir = models.CharField(max_length=100)
@@ -57,7 +63,7 @@ class ProfileGuru(models.Model):
         return self.guru.nama
 
 class GuruMapel(models.Model):
-    kode_guru_mapel = models.CharField(max_length=6)
+    kode_ajar = models.CharField(max_length=6)
     guru = models.ForeignKey(UserGuru, on_delete=models.CASCADE)
     mapel = models.ForeignKey(Mapel, on_delete=models.CASCADE)
 
@@ -137,5 +143,4 @@ class Pengumuman(models.Model):
     perihal = models.CharField(max_length=100)
     waktu = models.DateTimeField(default=timezone.now)
     status = models.CharField(max_length=10, choices=PengumumanStatus.choices)
-
     guru = models.ForeignKey(UserGuru, on_delete=models.CASCADE)
