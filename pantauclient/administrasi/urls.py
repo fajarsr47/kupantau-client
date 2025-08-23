@@ -15,9 +15,12 @@ urlpatterns = [
     path('mapel', views.mapel, name='mapel'),
     path('jampel', views.jampel, name='jampel'),
 
-    # --- URL KHUSUS Guru (Dipindahkan ke atas) ---
+   # --- URL KHUSUS Guru ---
     path('guru/tambah/', views.guru_edit, name='tambah_guru'),
     path('guru/edit/<int:obj_id>/', views.guru_edit, name='edit_guru'),
+    path('guru/<int:guru_id>/tambah-mapel/', views.guru_mapel_add, name='guru_mapel_add'),
+    path('guru/hapus-mapel/<int:gurumapel_id>/', views.guru_mapel_delete, name='guru_mapel_delete'),
+    path('guru/reset-password/<int:guru_id>/', views.guru_password_reset, name='guru_password_reset'),
 
     # --- URL Generik untuk Jadwal dan Kelas ---
     path('<str:page>/tambah/', views.jadwal_edit, name='tambah'),
