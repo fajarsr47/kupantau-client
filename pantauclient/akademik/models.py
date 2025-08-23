@@ -1,7 +1,6 @@
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from django.contrib.auth.models import AbstractUser
 
 # UNTUK MEMILIH JENIS KELAMIN
 class JenisKelamin(models.TextChoices):
@@ -39,22 +38,16 @@ class Mapel(models.Model):
         return self.nama_mapel
 
 # GURU.
-class UserGuru(AbstractUser):
-    # Override field email untuk membuatnya unik
-    email = models.EmailField(_("email address"), unique=True)
-    
-    # Tambahkan field kustom kita
-    nip = models.CharField(max_length=20, unique=True)
-    mengajar = models.ManyToManyField(Mapel, through='GuruMapel', blank=True)
+class UserGuru(models.Model):
+    nama = models.CharField(max_length=100)
+    nip = models.CharField(max_length=20)
+    email = models.EmailField(_("email"), max_length=100)
+    password = models.CharField(max_length=100)
+    mengajar = models.ManyToManyField(Mapel, through='GuruMapel')
     role = models.CharField(max_length=10, choices=Role.choices)
 
-    # Tetapkan 'email' sebagai field login utama
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username', 'nip'] # 'username' tetap di sini untuk kompatibilitas django-admin
-
     def __str__(self):
-        # Gunakan first_name jika ada, jika tidak gunakan username
-        return self.first_name or self.username
+        return self.nama
 
 class ProfileGuru(models.Model):
     guru = models.OneToOneField(UserGuru, on_delete=models.CASCADE)
@@ -67,7 +60,7 @@ class ProfileGuru(models.Model):
     no_hp = models.CharField(max_length=20)
 
     def __str__(self):
-        return self.guru.get_full_name()
+        return self.guru.nama
 
 class GuruMapel(models.Model):
     kode_ajar = models.CharField(max_length=6)

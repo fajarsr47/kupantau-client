@@ -1,73 +1,64 @@
 {% extends "administrasi/base.html" %}
 {% load static %}
 {% block isi %}
-<div class="h-fit w-full bg-white rounded-2xl flex flex-col py-2.5 px-3 gap-3">
+    <div class="h-fit w-full bg-white rounded-2xl flex flex-col py-2.5 px-3 gap-3">
 
-    <div class="w-full h-fit flex flex-row justify-between items-center">
-        <h2 class="text-lg font-medium">Profile Guru/Staff</h2>
-    </div>
-
-    {% if messages %}
-        {% for message in messages %}
-            <div class="p-4 mb-4 text-sm {% if message.tags == 'error' %}text-red-700 bg-red-100{% else %}text-green-700 bg-green-100{% endif %} rounded-lg" role="alert">
-                {{ message }}
-            </div>
-        {% endfor %}
-    {% endif %}
-
-    <form method="post" id="guruForm">
-        {% csrf_token %}
+        <div class="w-full h-fit flex flex-row justify-between items-center">
+            <h2 class="text-lg font-medium">Profile Guru/Staff</h2>
+        </div>
         <div class="grid xl:grid-cols-8 xl:grid-rows-13 gap-2">
-            
             <div class="flex flex-col justify-start xl:row-start-1 xl:col-start-1 xl:col-span-6">
-                <label for="{{ user_form.nama.id_for_label }}">Nama Lengkap</label>
-                {{ user_form.nama }}
+                <label>Nama Lengkap</label>
+                <input type="text" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
             </div>
             <div class="flex flex-col justify-start xl:col-start-7 xl:row-start-1 xl:col-span-2">
-                <label for="{{ profile_form.jenis_kelamin.id_for_label }}">Jenis Kelamin</label>
-                {{ profile_form.jenis_kelamin }}
+                <label>Jenis Kelamin</label>
+                <select id="scope" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
+                    <option selected>Laki-laki</option>
+                    <option>Perempuan</option>
+                </select>
             </div>
             <div class="flex flex-col justify-start xl:col-start-1 xl:row-start-2 xl:col-span-8">
-                <label for="{{ user_form.nip.id_for_label }}">NIP</label>
-                {{ user_form.nip }}
+                <label>NIP</label>
+                <input type="text" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
             </div>
             <div class="flex flex-col justify-start xl:col-start-1 xl:row-start-3 xl:col-span-8">
-                <label for="{{ profile_form.nuptk.id_for_label }}">NUPTK</label>
-                {{ profile_form.nuptk }}
+                <label>NUPTK</label>
+                <input type="text" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
             </div>
             <div class="flex flex-col justify-start xl:col-start-1 xl:row-start-4 xl:col-span-4">
-                <label for="{{ user_form.email.id_for_label }}">Email</label>
-                {{ user_form.email }}
+                <label>Email</label>
+                <input type="text" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
             </div>
             <div class="flex flex-col justify-start xl:col-start-5 xl:row-start-4 xl:col-span-4">
-                <label for="{{ profile_form.no_hp.id_for_label }}">No Telepon</label>
-                {{ profile_form.no_hp }}
+                <label>No Telepon</label>
+                <input type="text" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
             </div>
             <div class="flex flex-col justify-start xl:col-start-1 xl:row-start-5 xl:col-span-4">
-                <label for="{{ profile_form.tempat_lahir.id_for_label }}">Tempat Lahir</label>
-                {{ profile_form.tempat_lahir }}
+                <label>Tempat Lahir</label>
+                <input type="text" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
             </div>
             <div class="flex flex-col justify-start xl:col-start-5 xl:row-start-5 xl:col-span-4">
-                <label for="{{ profile_form.tanggal_lahir.id_for_label }}">Tanggal Lahir</label>
-                {{ profile_form.tanggal_lahir }}
+                <label>Tanggal Lahir</label>
+                <input type="date" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
             </div>
             <div class="flex flex-col justify-start xl:col-start-1 xl:row-start-6 xl:col-span-8">
-                <label for="{{ profile_form.alamat.id_for_label }}">Alamat</label>
-                {{ profile_form.alamat }}
+                <label>Alamat</label>
+                <input type="text" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
             </div>
-
             <div class="flex flex-col justify-start xl:col-start-1 xl:row-start-7 xl:col-span-8 xl:row-span-4 p-2 gap-2 rounded-2xl border-2 border-gray-300 ">
                 <div class="flex w-full justify-between items-end">
                     <div class="w-44">
-                        <label for="{{ user_form.role.id_for_label }}">Role</label>
-                        {{ user_form.role }}
+                        <label>Role</label>
+                        <select id="scope" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
+                            <option selected>Guru</option>
+                            <option>Admin</option>
+                        </select>
                     </div>
-                    {% if obj.pk %}
-                    <a href="{% url 'guru_mapel_add' guru_id=obj.id %}" class="h-10 bg-sky-300 hover:bg-sky-500 text-white font-medium py-0.5 px-2 rounded-lg flex items-center space-x-1 text-sm transition-colors">
+                    <a href="#" class="h-10 bg-sky-300 hover:bg-sky-500 text-white font-medium py-0.5 px-2 rounded-lg flex items-center space-x-1 text-sm transition-colors">
                         <img src="{% static 'icon/plus.svg' %}" alt="+">
                         <span>Tambah Mapel</span>
                     </a>
-                    {% endif %}
                 </div>
                 
                 <div class="overflow-x-auto min-w-0">
@@ -82,82 +73,31 @@
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            {% for item in mapel_diampu %}
                             <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ forloop.counter }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ item.mapel.nama_mapel }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ item.mapel.kode_mapel }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ item.kode_ajar }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium flex flex-row items-center justify-center">
-                                    <form action="{% url 'guru_mapel_delete' gurumapel_id=item.id %}" method="post" onsubmit="return confirm('Apakah Anda yakin ingin menghapus mata pelajaran ini?')">
-                                        {% csrf_token %}
-                                        <button type="submit" class="flex-shrink-0 text-red-600 hover:text-red-900 ml-4 hover:bg-amber-100 p-1 rounded-full">
-                                            <img class="size-8" src="{% static 'icon/aksi/hapus.svg' %}" alt="Hapus">
-                                        </button>
-                                    </form>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">1</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">MateMatika</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">MTK</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">MTK123</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium flex flex-row items-center justify-start">
+                                    <a href="#" onclick="return confirm('Apakah Anda yakin ingin menghapus?')" class="flex-shrink-0 text-red-600 hover:text-red-900 ml-4 hover:bg-amber-100 p-1 rounded-full">
+                                        <img class="size-8" src="{% static 'icon/aksi/hapus.svg' %}" alt="Hapus">
+                                    </a>
                                 </td>
                             </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="5" class="text-center py-4">Belum ada mata pelajaran yang diampu.</td>
-                            </tr>
-                            {% endfor %}
                         </tbody>
                     </table>
                 </div>
             </div>
-            
             <div class="flex flex-col justify-start xl:col-start-1 xl:row-start-11 xl:col-span-7">
-                <label for="{{ user_form.password.id_for_label }}">Password</label>
-                {{ user_form.password }}
+                <label>password</label>
+                <input type="text" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
             </div>
-            {% if obj.pk %}
             <div class="flex flex-col justify-end xl:col-start-8 xl:row-start-11 xl:col-span-1">
-                <button type="button" id="resetPasswordBtn" class="w-full bg-red-300 border border-red-400 text-white text-sm rounded-lg hover:bg-red-500 p-2">RESET PASSWORD</button>
+                <button class="w-full bg-red-300 border border-red-400 text-white text-sm rounded-lg hover:bg-red-500 p-2" >RESET PASSWORD</button>
             </div>
-            {% endif %}
-
             <div class="flex flex-col justify-end xl:col-start-8 xl:row-start-13 xl:col-span-1">
-                <button type="submit" class="w-full bg-blue-300 border border-blue-400 text-white text-sm rounded-lg hover:bg-blue-500 p-2">Simpan Perubahan</button>
+                <button class="w-full bg-blue-300 border border-blue-400 text-white text-sm rounded-lg hover:bg-blue-500 p-2">simpan perubahan</button>
             </div>
         </div>
-    </form>
-    
-    {% if obj.pk %}
-    <form id="resetPasswordForm" action="{% url 'guru_password_reset' guru_id=obj.id %}" method="post" style="display: none;">
-        {% csrf_token %}
-    </form>
-    {% endif %}
-</div>
+    </div>
 {% endblock isi %}
-
-{% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const nipField = document.getElementById('nip_field');
-    const passwordField = document.getElementById('{{ user_form.password.id_for_label }}');
-    const resetBtn = document.getElementById('resetPasswordBtn');
-    const resetForm = document.getElementById('resetPasswordForm');
-
-    // Mengisi password otomatis saat NIP diketik (hanya untuk user baru)
-    {% if not obj.pk %}
-        if (nipField) {
-            nipField.addEventListener('input', function() {
-                passwordField.value = this.value;
-            });
-        }
-    {% endif %}
-
-    // Fungsi reset password
-    if(resetBtn) {
-        resetBtn.addEventListener('click', function() {
-            if (confirm('Yakin ingin reset password? Password akan diubah sama seperti NIP.')) {
-                if (resetForm) {
-                    resetForm.submit();
-                }
-            }
-        });
-    }
-});
-</script>
-{% endblock extra_js %}

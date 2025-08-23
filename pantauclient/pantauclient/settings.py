@@ -44,9 +44,6 @@ INSTALLED_APPS = [
     'login',
 ]
 
-# Gunakan UserGuru sebagai model user kustom
-AUTH_USER_MODEL = 'akademik.UserGuru'
-
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
