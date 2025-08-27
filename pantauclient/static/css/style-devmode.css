@@ -32,6 +32,7 @@
     --color-green-700: oklch(52.7% 0.154 150.069);
     --color-green-800: oklch(44.8% 0.119 151.328);
     --color-sky-300: oklch(82.8% 0.111 230.318);
+    --color-sky-400: oklch(74.6% 0.16 232.661);
     --color-sky-500: oklch(68.5% 0.169 237.323);
     --color-blue-50: oklch(97% 0.014 254.604);
     --color-blue-100: oklch(93.2% 0.032 255.585);
@@ -48,7 +49,6 @@
     --color-indigo-800: oklch(39.8% 0.195 277.366);
     --color-indigo-900: oklch(35.9% 0.144 278.697);
     --color-gray-50: oklch(98.5% 0.002 247.839);
-    --color-gray-100: oklch(96.7% 0.003 264.542);
     --color-gray-200: oklch(92.8% 0.006 264.531);
     --color-gray-300: oklch(87.2% 0.01 258.338);
     --color-gray-500: oklch(55.1% 0.027 264.364);
@@ -285,9 +285,6 @@
   .ms-2 {
     margin-inline-start: calc(var(--spacing) * 2);
   }
-  .mt-1 {
-    margin-top: calc(var(--spacing) * 1);
-  }
   .mt-2 {
     margin-top: calc(var(--spacing) * 2);
   }
@@ -312,17 +309,11 @@
   .-mb-px {
     margin-bottom: -1px;
   }
-  .mb-1 {
-    margin-bottom: calc(var(--spacing) * 1);
-  }
   .mb-2 {
     margin-bottom: calc(var(--spacing) * 2);
   }
   .mb-3 {
     margin-bottom: calc(var(--spacing) * 3);
-  }
-  .mb-4 {
-    margin-bottom: calc(var(--spacing) * 4);
   }
   .mb-5 {
     margin-bottom: calc(var(--spacing) * 5);
@@ -390,9 +381,6 @@
   .h-16 {
     height: calc(var(--spacing) * 16);
   }
-  .h-24 {
-    height: calc(var(--spacing) * 24);
-  }
   .h-36 {
     height: calc(var(--spacing) * 36);
   }
@@ -423,9 +411,6 @@
   .w-12 {
     width: calc(var(--spacing) * 12);
   }
-  .w-14 {
-    width: calc(var(--spacing) * 14);
-  }
   .w-16 {
     width: calc(var(--spacing) * 16);
   }
@@ -438,11 +423,11 @@
   .w-32 {
     width: calc(var(--spacing) * 32);
   }
-  .w-40 {
-    width: calc(var(--spacing) * 40);
-  }
   .w-44 {
     width: calc(var(--spacing) * 44);
+  }
+  .w-48 {
+    width: calc(var(--spacing) * 48);
   }
   .w-56 {
     width: calc(var(--spacing) * 56);
@@ -561,13 +546,6 @@
   .gap-4 {
     gap: calc(var(--spacing) * 4);
   }
-  .space-y-6 {
-    :where(& > :not(:last-child)) {
-      --tw-space-y-reverse: 0;
-      margin-block-start: calc(calc(var(--spacing) * 6) * var(--tw-space-y-reverse));
-      margin-block-end: calc(calc(var(--spacing) * 6) * calc(1 - var(--tw-space-y-reverse)));
-    }
-  }
   .space-x-1 {
     :where(& > :not(:last-child)) {
       --tw-space-x-reverse: 0;
@@ -653,14 +631,8 @@
     border-bottom-style: var(--tw-border-style);
     border-bottom-width: 2px;
   }
-  .border-\[\#3D3D3D\] {
-    border-color: #3D3D3D;
-  }
   .border-\[\#84A7FF\] {
     border-color: #84A7FF;
-  }
-  .border-amber-500 {
-    border-color: var(--color-amber-500);
   }
   .border-blue-400 {
     border-color: var(--color-blue-400);
@@ -673,6 +645,9 @@
   }
   .border-red-400 {
     border-color: var(--color-red-400);
+  }
+  .border-sky-400 {
+    border-color: var(--color-sky-400);
   }
   .border-transparent {
     border-color: transparent;
@@ -949,6 +924,9 @@
   .uppercase {
     text-transform: uppercase;
   }
+  .italic {
+    font-style: italic;
+  }
   .underline {
     text-decoration-line: underline;
   }
@@ -1044,13 +1022,6 @@
       }
     }
   }
-  .hover\:bg-gray-100 {
-    &:hover {
-      @media (hover: hover) {
-        background-color: var(--color-gray-100);
-      }
-    }
-  }
   .hover\:bg-gray-300 {
     &:hover {
       @media (hover: hover) {
@@ -1104,6 +1075,13 @@
     &:hover {
       @media (hover: hover) {
         color: var(--color-gray-700);
+      }
+    }
+  }
+  .hover\:text-indigo-800 {
+    &:hover {
+      @media (hover: hover) {
+        color: var(--color-indigo-800);
       }
     }
   }
@@ -1370,16 +1348,6 @@
       grid-column-start: 1;
     }
   }
-  .xl\:col-start-2 {
-    @media (width >= 80rem) {
-      grid-column-start: 2;
-    }
-  }
-  .xl\:col-start-3 {
-    @media (width >= 80rem) {
-      grid-column-start: 3;
-    }
-  }
   .xl\:col-start-4 {
     @media (width >= 80rem) {
       grid-column-start: 4;
@@ -1388,11 +1356,6 @@
   .xl\:col-start-5 {
     @media (width >= 80rem) {
       grid-column-start: 5;
-    }
-  }
-  .xl\:col-start-6 {
-    @media (width >= 80rem) {
-      grid-column-start: 6;
     }
   }
   .xl\:col-start-7 {
@@ -1405,19 +1368,9 @@
       grid-column-start: 8;
     }
   }
-  .xl\:col-start-9 {
-    @media (width >= 80rem) {
-      grid-column-start: 9;
-    }
-  }
   .xl\:col-start-11 {
     @media (width >= 80rem) {
       grid-column-start: 11;
-    }
-  }
-  .xl\:row-span-2 {
-    @media (width >= 80rem) {
-      grid-row: span 2 / span 2;
     }
   }
   .xl\:row-span-3 {
@@ -1428,11 +1381,6 @@
   .xl\:row-span-4 {
     @media (width >= 80rem) {
       grid-row: span 4 / span 4;
-    }
-  }
-  .xl\:row-span-6 {
-    @media (width >= 80rem) {
-      grid-row: span 6 / span 6;
     }
   }
   .xl\:row-span-7 {
@@ -1475,19 +1423,9 @@
       grid-row-start: 7;
     }
   }
-  .xl\:row-start-8 {
-    @media (width >= 80rem) {
-      grid-row-start: 8;
-    }
-  }
   .xl\:row-start-11 {
     @media (width >= 80rem) {
       grid-row-start: 11;
-    }
-  }
-  .xl\:row-start-12 {
-    @media (width >= 80rem) {
-      grid-row-start: 12;
     }
   }
   .xl\:row-start-13 {
@@ -1505,11 +1443,6 @@
       grid-template-columns: repeat(8, minmax(0, 1fr));
     }
   }
-  .xl\:grid-cols-10 {
-    @media (width >= 80rem) {
-      grid-template-columns: repeat(10, minmax(0, 1fr));
-    }
-  }
   .xl\:grid-cols-12 {
     @media (width >= 80rem) {
       grid-template-columns: repeat(12, minmax(0, 1fr));
@@ -1523,21 +1456,6 @@
   .xl\:grid-rows-6 {
     @media (width >= 80rem) {
       grid-template-rows: repeat(6, minmax(0, 1fr));
-    }
-  }
-  .xl\:grid-rows-8 {
-    @media (width >= 80rem) {
-      grid-template-rows: repeat(8, minmax(0, 1fr));
-    }
-  }
-  .xl\:grid-rows-10 {
-    @media (width >= 80rem) {
-      grid-template-rows: repeat(10, minmax(0, 1fr));
-    }
-  }
-  .xl\:grid-rows-12 {
-    @media (width >= 80rem) {
-      grid-template-rows: repeat(12, minmax(0, 1fr));
     }
   }
   .xl\:grid-rows-13 {
@@ -1600,11 +1518,6 @@
 @property --tw-skew-y {
   syntax: "*";
   inherits: false;
-}
-@property --tw-space-y-reverse {
-  syntax: "*";
-  inherits: false;
-  initial-value: 0;
 }
 @property --tw-space-x-reverse {
   syntax: "*";
@@ -1722,7 +1635,6 @@
       --tw-rotate-z: initial;
       --tw-skew-x: initial;
       --tw-skew-y: initial;
-      --tw-space-y-reverse: 0;
       --tw-space-x-reverse: 0;
       --tw-divide-y-reverse: 0;
       --tw-border-style: solid;

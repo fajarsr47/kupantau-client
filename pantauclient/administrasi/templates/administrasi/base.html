@@ -150,6 +150,13 @@
             </div>
             
             <main class="flex-1 overflow-auto p-3 lg:p-5 bg-blue-50">
+                {% if messages %}
+                    <div class="p-2">
+                        {% for message in messages %}
+                        <div class="mb-2 text-sm {{ message.tags }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
                 {% block isi %}
                 {% endblock isi %}
             </main>

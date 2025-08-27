@@ -19,6 +19,9 @@ urlpatterns = [
     path('guru/tambah/', views.guru_edit, name='tambah_guru'),
     path('guru/edit/<int:obj_id>/', views.guru_edit, name='edit_guru'),
 
+    path('guru/<int:guru_id>/mapel/tambah/', views.guru_mapel_tambah, name='tambah_mapel_guru'),
+    path('guru/<int:guru_id>/mapel/<int:gm_id>/hapus/', views.guru_mapel_hapus, name='hapus_mapel_guru'),
+
     # --- URL Generik untuk Jadwal dan Kelas ---
     path('<str:page>/tambah/', views.jadwal_edit, name='tambah'),
     path('<str:page>/edit/<int:obj_id>/', views.jadwal_edit, name='edit'),

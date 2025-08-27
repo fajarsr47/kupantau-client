@@ -6,98 +6,118 @@
         <div class="w-full h-fit flex flex-row justify-between items-center">
             <h2 class="text-lg font-medium">Profile Guru/Staff</h2>
         </div>
-        <div class="grid xl:grid-cols-8 xl:grid-rows-13 gap-2">
-            <div class="flex flex-col justify-start xl:row-start-1 xl:col-start-1 xl:col-span-6">
-                <label>Nama Lengkap</label>
-                <input type="text" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
-            </div>
-            <div class="flex flex-col justify-start xl:col-start-7 xl:row-start-1 xl:col-span-2">
-                <label>Jenis Kelamin</label>
-                <select id="scope" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
-                    <option selected>Laki-laki</option>
-                    <option>Perempuan</option>
-                </select>
-            </div>
-            <div class="flex flex-col justify-start xl:col-start-1 xl:row-start-2 xl:col-span-8">
-                <label>NIP</label>
-                <input type="text" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
-            </div>
-            <div class="flex flex-col justify-start xl:col-start-1 xl:row-start-3 xl:col-span-8">
-                <label>NUPTK</label>
-                <input type="text" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
-            </div>
-            <div class="flex flex-col justify-start xl:col-start-1 xl:row-start-4 xl:col-span-4">
-                <label>Email</label>
-                <input type="text" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
-            </div>
-            <div class="flex flex-col justify-start xl:col-start-5 xl:row-start-4 xl:col-span-4">
-                <label>No Telepon</label>
-                <input type="text" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
-            </div>
-            <div class="flex flex-col justify-start xl:col-start-1 xl:row-start-5 xl:col-span-4">
-                <label>Tempat Lahir</label>
-                <input type="text" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
-            </div>
-            <div class="flex flex-col justify-start xl:col-start-5 xl:row-start-5 xl:col-span-4">
-                <label>Tanggal Lahir</label>
-                <input type="date" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
-            </div>
-            <div class="flex flex-col justify-start xl:col-start-1 xl:row-start-6 xl:col-span-8">
-                <label>Alamat</label>
-                <input type="text" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
-            </div>
-            <div class="flex flex-col justify-start xl:col-start-1 xl:row-start-7 xl:col-span-8 xl:row-span-4 p-2 gap-2 rounded-2xl border-2 border-gray-300 ">
-                <div class="flex w-full justify-between items-end">
-                    <div class="w-44">
-                        <label>Role</label>
-                        <select id="scope" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
-                            <option selected>Guru</option>
-                            <option>Admin</option>
-                        </select>
+        <form method="post">
+            {% csrf_token %}
+            <div class="grid xl:grid-cols-8 xl:grid-rows-13 gap-2">
+                <div class="flex flex-col justify-start xl:row-start-1 xl:col-start-1 xl:col-span-6">
+                    <label>Nama Lengkap</label>
+                    <input type="text" name="nama" value="{{ user_form.nama.value }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
+                </div>
+                <div class="flex flex-col justify-start xl:col-start-7 xl:row-start-1 xl:col-span-2">
+                    <label>Jenis Kelamin</label>
+                    <select name="jenis_kelamin" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
+                        {% for val,label in profile_form.jenis_kelamin.field.choices %}
+                            <option value="{{ val }}" {% if profile_form.jenis_kelamin.value == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex flex-col justify-start xl:col-start-1 xl:row-start-2 xl:col-span-8">
+                    <label>NIP</label>
+                    <input type="text" name="nip" value="{{ user_form.nip.value }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
+                </div>
+                <div class="flex flex-col justify-start xl:col-start-1 xl:row-start-3 xl:col-span-8">
+                    <label>NUPTK</label>
+                    <input type="text" name="nuptk" value="{{ profile_form.nuptk.value }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
+                </div>
+                <div class="flex flex-col justify-start xl:col-start-1 xl:row-start-4 xl:col-span-4">
+                    <label>Email</label>
+                    <input type="email" name="email" value="{{ user_form.email.value }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
+                </div>
+                <div class="flex flex-col justify-start xl:col-start-5 xl:row-start-4 xl:col-span-4">
+                    <label>No Telepon</label>
+                    <input type="text" name="no_hp" value="{{ profile_form.no_hp.value }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
+                </div>
+                <div class="flex flex-col justify-start xl:col-start-1 xl:row-start-5 xl:col-span-4">
+                    <label>Tempat Lahir</label>
+                    <input type="text" name="tempat_lahir" value="{{ profile_form.tempat_lahir.value }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
+                </div>
+                <div class="flex flex-col justify-start xl:col-start-5 xl:row-start-5 xl:col-span-4">
+                    <label>Tanggal Lahir</label>
+                    <input type="date" name="tanggal_lahir" value="{{ profile_form.tanggal_lahir.value|date:'Y-m-d' }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
+                </div>
+                <div class="flex flex-col justify-start xl:col-start-1 xl:row-start-6 xl:col-span-8">
+                    <label>Alamat</label>
+                    <input type="text" name="alamat" value="{{ profile_form.alamat.value }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
+                </div>
+
+                <!-- Panel kanan (role & mapel) dibiarkan sesuai tampilan aslinya -->
+                <div class="flex flex-col justify-start xl:col-start-1 xl:row-start-7 xl:row-span-4 xl:col-span-8 p-2 gap-2 rounded-2xl border-2 border-gray-300 ">
+                    <div class="flex w-full justify-between items-end">
+                        <div class="w-44">
+                            <label>Role</label>
+                            <select name="role" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
+                                {% for val,label in user_form.role.field.choices %}
+                                    <option value="{{ val }}" {% if user_form.role.value == val %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <a href="{% url 'tambah_mapel_guru' guru_id=obj.id %}" class="h-10 bg-sky-300 hover:bg-sky-500 text-white border border-sky-400 rounded-lg flex items-center space-x-1 text-sm transition-colors">
+                            <img src="{% static 'icon/plus.svg' %}" alt="+">
+                            <span>Tambah Mapel</span>
+                        </a>
                     </div>
-                    <a href="#" class="h-10 bg-sky-300 hover:bg-sky-500 text-white font-medium py-0.5 px-2 rounded-lg flex items-center space-x-1 text-sm transition-colors">
-                        <img src="{% static 'icon/plus.svg' %}" alt="+">
-                        <span>Tambah Mapel</span>
-                    </a>
+
+                    <!-- Tabel mapel (dummy) tetap seperti desain asli -->
+                    <div class="overflow-x-auto min-w-0">
+                        <table class="min-w-full divide-y divide-gray-200 table-fixed">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mapel</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kode Ajar</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {% for gm in list_gurumapel %}
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ forloop.counter }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ gm.mapel.nama_mapel }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ gm.kode_ajar }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium flex flex-row items-start justify-start">
+                                        <a href="{% url 'hapus_mapel_guru' guru_id=obj.id gm_id=gm.id %}" class="text-red-600 hover:text-red-900 ml-4 hover:bg-amber-100 p-1 rounded-full">
+                                            <img class="size-8" src="{% static 'icon/aksi/hapus.svg' %}" alt="Hapus">
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 italic">
+                                        Belum ada mapel yang diampu.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                
-                <div class="overflow-x-auto min-w-0">
-                    <table class="min-w-full divide-y divide-gray-200 table-fixed">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th scope="col" class="w-16 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mata Pelajaran</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kode Mapel</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kode Ajar Guru</th>
-                                <th scope="col" class="w-32 px-6 py-3 text-center justify-center text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">1</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">MateMatika</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">MTK</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">MTK123</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium flex flex-row items-center justify-start">
-                                    <a href="#" onclick="return confirm('Apakah Anda yakin ingin menghapus?')" class="flex-shrink-0 text-red-600 hover:text-red-900 ml-4 hover:bg-amber-100 p-1 rounded-full">
-                                        <img class="size-8" src="{% static 'icon/aksi/hapus.svg' %}" alt="Hapus">
-                                    </a>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+
+                <!-- Password input tetap ada sesuai UI, tapi backend akan mengabaikan saat edit -->
+                <div class="flex flex-col justify-start xl:col-start-1 xl:row-start-11 xl:col-span-7">
+                    <label>password</label>
+                    <input type="password" name="password" value="" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
+                </div>
+
+                <!-- RESET PASSWORD: hanya menambah name="reset_password" supaya backend mengenali aksi reset -->
+                <div class="flex flex-col justify-end xl:col-start-8 xl:row-start-11 xl:col-span-1">
+                    <button type="submit" name="reset_password" class="w-full bg-red-300 border border-red-400 text-white text-sm rounded-lg hover:bg-red-500 p-2">RESET PASSWORD</button>
+                </div>
+
+                <div class="flex flex-col justify-end xl:col-start-8 xl:row-start-13 xl:col-span-1">
+                    <button type="submit" class="w-full bg-blue-300 border border-blue-400 text-white text-sm rounded-lg hover:bg-blue-500 p-2">simpan perubahan</button>
                 </div>
             </div>
-            <div class="flex flex-col justify-start xl:col-start-1 xl:row-start-11 xl:col-span-7">
-                <label>password</label>
-                <input type="text" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
             </div>
-            <div class="flex flex-col justify-end xl:col-start-8 xl:row-start-11 xl:col-span-1">
-                <button class="w-full bg-red-300 border border-red-400 text-white text-sm rounded-lg hover:bg-red-500 p-2" >RESET PASSWORD</button>
-            </div>
-            <div class="flex flex-col justify-end xl:col-start-8 xl:row-start-13 xl:col-span-1">
-                <button class="w-full bg-blue-300 border border-blue-400 text-white text-sm rounded-lg hover:bg-blue-500 p-2">simpan perubahan</button>
-            </div>
-        </div>
+        </form>
     </div>
 {% endblock isi %}

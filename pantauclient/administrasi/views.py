@@ -1,11 +1,13 @@
+import re
 from multiprocessing import context
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.contrib.auth import authenticate, login
 from django.contrib import messages
-from akademik.models import Kelas, Mapel, JamPelajaran, Jadwal, UserGuru, ProfileGuru
+from akademik.models import Kelas, Mapel, JamPelajaran, Jadwal, UserGuru, ProfileGuru, GuruMapel
 from akademik.forms import KelasForm, MapelForm, JamPelajaranForm, JadwalForm, UserGuruForm, ProfileGuruForm
 from django.db import transaction
+from django.contrib.auth.hashers import make_password
 
 # Create your views here.
 def index(request):
@@ -122,7 +124,12 @@ def jadwal_edit(request, page, obj_id=None):
 
 @transaction.atomic
 def guru_edit(request, obj_id=None):
-    """View untuk menangani tambah/edit data Guru."""
+    """
+    Admin:
+    - TIDAK bisa ganti password lewat form.
+    - CREATE: password = NIP (di-hash).
+    - RESET PASSWORD: password = NIP (di-hash).
+    """
     if obj_id:
         user_guru = get_object_or_404(UserGuru, id=obj_id)
         profile_guru = getattr(user_guru, 'profileguru', None) or ProfileGuru(guru=user_guru)
@@ -131,23 +138,63 @@ def guru_edit(request, obj_id=None):
         profile_guru = ProfileGuru()
 
     if request.method == 'POST':
+        # Tombol reset password
+        if 'reset_password' in request.POST and (obj_id or user_guru.id):
+            guru_obj = user_guru if user_guru.id else get_object_or_404(UserGuru, id=obj_id)
+            guru_obj.password = make_password(guru_obj.nip)
+            guru_obj.save(update_fields=['password'])
+            messages.success(request, 'Password berhasil di-reset ke NIP.')
+            return redirect('edit_guru', obj_id=guru_obj.id)
+
         user_form = UserGuruForm(request.POST, instance=user_guru)
         profile_form = ProfileGuruForm(request.POST, instance=profile_guru)
+
+        # === Penting: longgarkan requirement tanpa ubah tampilan ===
+        if 'password' in user_form.fields:
+            user_form.fields['password'].required = False
+        if 'mengajar' in user_form.fields:
+            user_form.fields['mengajar'].required = False  # karena tidak ada inputnya di template
+
         if user_form.is_valid() and profile_form.is_valid():
+            is_create = user_guru.id is None
             user = user_form.save(commit=False)
-            password = user_form.cleaned_data.get('password')
-            if password:
-                user.set_password(password)
+
+            if is_create:
+                # password awal mengikuti NIP
+                user.password = make_password(user.nip)
+            else:
+                # Saat edit, jangan sentuh password
+                original = UserGuru.objects.get(id=user_guru.id)
+                user.password = original.password
+
             user.save()
-            user_form.save_m2m()  # Menyimpan relasi ManyToMany
+            # relasi M2M (abaikan kalau tidak ada inputnya—tidak mengapa)
+            try:
+                user_form.save_m2m()
+            except Exception:
+                pass
 
             profile = profile_form.save(commit=False)
             profile.guru = user
             profile.save()
+
+            messages.success(request, 'Data guru berhasil disimpan.')
             return redirect('guru')
+        else:
+            # Tampilkan error ke user (tanpa ubah UI lain)
+            if user_form.errors:
+                messages.error(request, f"User form error: {user_form.errors.as_text()}")
+            if profile_form.errors:
+                messages.error(request, f"Profile form error: {profile_form.errors.as_text()}")
+
     else:
         user_form = UserGuruForm(instance=user_guru)
         profile_form = ProfileGuruForm(instance=profile_guru)
+        # Longgarkan juga di GET agar konsisten (tidak wajib diisi)
+        if 'password' in user_form.fields:
+            user_form.fields['password'].required = False
+        if 'mengajar' in user_form.fields:
+            user_form.fields['mengajar'].required = False
 
     context = {
         'title': 'Manajemen Data Guru',
@@ -155,6 +202,7 @@ def guru_edit(request, obj_id=None):
         'profile_form': profile_form,
         'page': 'guru',
         'obj': user_guru,
+        'list_gurumapel': GuruMapel.objects.filter(guru=user_guru).select_related('mapel'),
     }
     return render(request, 'administrasi/guru_edit.html', context)
 
@@ -170,3 +218,50 @@ def hapus(request, page, obj_id):
     obj = get_object_or_404(Model, id=obj_id)
     obj.delete()
     return redirect(page)
+
+@transaction.atomic
+def guru_mapel_tambah(request, guru_id):
+    guru = get_object_or_404(UserGuru, id=guru_id)
+    semua_mapel = Mapel.objects.all().order_by('nama_mapel')
+
+    if request.method == 'POST':
+        mapel_id = request.POST.get('mapel')
+        if not mapel_id:
+            messages.error(request, 'Silakan pilih mata pelajaran.')
+            return redirect('tambah_mapel_guru', guru_id=guru.id)
+
+        mapel = get_object_or_404(Mapel, id=mapel_id)
+
+        # kode_ajar = kode_mapel + 3 digit terakhir dari NIP (hanya digit)
+        nip_digits = re.sub(r'\D', '', guru.nip or '')
+        suffix = nip_digits[-3:] if len(nip_digits) >= 3 else nip_digits
+        kode_ajar = f"{mapel.kode_mapel}{suffix}"
+
+        # Cegah duplikasi (guru-mapel yang sama)
+        if GuruMapel.objects.filter(guru=guru, mapel=mapel).exists():
+            messages.warning(request, 'Guru sudah mengampu mapel tersebut.')
+            return redirect('edit_guru', obj_id=guru.id)
+
+        gm = GuruMapel.objects.create(
+            guru=guru,
+            mapel=mapel,
+            kode_ajar=kode_ajar
+        )
+        messages.success(request, f"Mapel '{mapel.nama_mapel}' ditambahkan. Kode ajar: {gm.kode_ajar}")
+        return redirect('edit_guru', obj_id=guru.id)
+
+    # GET → tampilkan form pilih mapel
+    context = {
+        'title': 'Tambah Mapel Diampu',
+        'guru': guru,
+        'semua_mapel': semua_mapel,
+    }
+    return render(request, 'administrasi/guru_mapel_tambah.html', context)
+
+@transaction.atomic
+def guru_mapel_hapus(request, guru_id, gm_id):
+    guru = get_object_or_404(UserGuru, id=guru_id)
+    gm = get_object_or_404(GuruMapel, id=gm_id, guru=guru)
+    gm.delete()
+    messages.success(request, 'Mapel berhasil dihapus dari daftar ampuan.')
+    return redirect('edit_guru', obj_id=guru.id)
