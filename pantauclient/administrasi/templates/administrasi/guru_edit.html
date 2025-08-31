@@ -55,16 +55,25 @@
                     <div class="flex w-full justify-between items-end">
                         <div class="w-44">
                             <label>Role</label>
-                            <select name="role" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
-                                {% for val,label in user_form.role.field.choices %}
-                                    <option value="{{ val }}" {% if user_form.role.value == val %}selected{% endif %}>{{ label }}</option>
-                                {% endfor %}
+                            <select name="role" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
+                        focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
+                            {% for val,label in user_form.role.field.choices %}
+                                <option value="{{ val }}" {% if user_form.role.value == val %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
                             </select>
                         </div>
-                        <a href="{% url 'tambah_mapel_guru' guru_id=obj.id %}" class="h-10 bg-sky-300 hover:bg-sky-500 text-white border border-sky-400 rounded-lg flex items-center space-x-1 text-sm transition-colors">
+
+                        {% if obj and obj.id %}
+                            <a href="{% url 'tambah_mapel_guru' guru_id=obj.id %}" class="h-10 bg-sky-300 hover:bg-sky-500 text-white border border-sky-400 rounded-lg flex items-center space-x-1 text-sm transition-colors px-3">
                             <img src="{% static 'icon/plus.svg' %}" alt="+">
                             <span>Tambah Mapel</span>
-                        </a>
+                            </a>
+                        {% else %}
+                            <button type="button" disabled class="h-10 bg-gray-200 text-gray-500 border border-gray-300 rounded-lg flex items-center space-x-1 text-sm px-3 cursor-not-allowed" title="Simpan data guru dulu">
+                            <img src="{% static 'icon/plus.svg' %}" alt="+" class="opacity-50">
+                            <span>Tambah Mapel</span>
+                            </button>
+                        {% endif %}
                     </div>
 
                     <!-- Tabel mapel (dummy) tetap seperti desain asli -->
@@ -79,24 +88,28 @@
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
-                                {% for gm in list_gurumapel %}
-                                <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ forloop.counter }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ gm.mapel.nama_mapel }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ gm.kode_ajar }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium flex flex-row items-start justify-start">
+                                {% if obj and obj.id %}
+                                    {% for gm in list_gurumapel %}
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ forloop.counter }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ gm.mapel.nama_mapel }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ gm.kode_ajar }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium flex flex-row items-start justify-start">
                                         <a href="{% url 'hapus_mapel_guru' guru_id=obj.id gm_id=gm.id %}" class="text-red-600 hover:text-red-900 ml-4 hover:bg-amber-100 p-1 rounded-full">
                                             <img class="size-8" src="{% static 'icon/aksi/hapus.svg' %}" alt="Hapus">
                                         </a>
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="4" class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 italic">
-                                        Belum ada mapel yang diampu.
-                                    </td>
-                                </tr>
-                                {% endfor %}
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="4" class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 italic">Belum ada mapel yang diampu.</td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                    <td colspan="4" class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 italic">Simpan data guru terlebih dahulu untuk menambah mapel.</td>
+                                    </tr>
+                                {% endif %}
                             </tbody>
                         </table>
                     </div>

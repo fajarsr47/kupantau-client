@@ -4,10 +4,15 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.contrib.auth import authenticate, login
 from django.contrib import messages
-from akademik.models import Kelas, Mapel, JamPelajaran, Jadwal, UserGuru, ProfileGuru, GuruMapel
+from akademik.models import Kelas, Siswa, Mapel, JamPelajaran, Jadwal, UserGuru, ProfileGuru, GuruMapel
 from akademik.forms import KelasForm, MapelForm, JamPelajaranForm, JadwalForm, UserGuruForm, ProfileGuruForm
 from django.db import transaction
 from django.contrib.auth.hashers import make_password
+from django.contrib import messages
+from django.db.models import Value, CharField
+from django.db.models.expressions import Case, When
+import csv, io, re
+from django.utils.dateparse import parse_date
 
 # Create your views here.
 def index(request):
@@ -35,12 +40,6 @@ def pengaturan(request):
         'title': 'Pengaturan',
     }
     return render(request, 'administrasi/pengaturan.html', context)
-
-def siswa(request):
-    context = {
-        'title': 'Manajemen Data Siswa',
-    }
-    return render(request, 'administrasi/siswa.html', context)
 
 def guru(request):
     semua_guru = UserGuru.objects.all()
@@ -195,6 +194,10 @@ def guru_edit(request, obj_id=None):
             user_form.fields['password'].required = False
         if 'mengajar' in user_form.fields:
             user_form.fields['mengajar'].required = False
+    
+    list_gm = []
+    if user_guru.id:
+        list_gm = GuruMapel.objects.filter(guru=user_guru).select_related('mapel')
 
     context = {
         'title': 'Manajemen Data Guru',
@@ -202,7 +205,7 @@ def guru_edit(request, obj_id=None):
         'profile_form': profile_form,
         'page': 'guru',
         'obj': user_guru,
-        'list_gurumapel': GuruMapel.objects.filter(guru=user_guru).select_related('mapel'),
+        'list_gurumapel': list_gm,
     }
     return render(request, 'administrasi/guru_edit.html', context)
 
@@ -212,12 +215,28 @@ def hapus(request, page, obj_id):
         'mapel': Mapel,
         'jampel': JamPelajaran,
         'jadwal': Jadwal,
+        'guru': UserGuru,  # <-- TAMBAHKAN INI
     }
-    
+
     Model = model_map.get(page)
+    if not Model:
+        messages.error(request, "Halaman hapus tidak dikenal.")
+        return redirect('index')
+
     obj = get_object_or_404(Model, id=obj_id)
+    nama_obj = getattr(obj, 'nama', str(obj))  # biar ada nama saat pesan
     obj.delete()
-    return redirect(page)
+
+    # Redirect sesuai halaman
+    redirect_map = {
+        'kelas': 'kelas',
+        'mapel': 'mapel',
+        'jampel': 'jampel',
+        'jadwal': 'jadwal',
+        'guru': 'guru',
+    }
+    messages.success(request, f"Data {page} '{nama_obj}' berhasil dihapus.")
+    return redirect(redirect_map.get(page, 'index'))
 
 @transaction.atomic
 def guru_mapel_tambah(request, guru_id):
@@ -265,3 +284,230 @@ def guru_mapel_hapus(request, guru_id, gm_id):
     gm.delete()
     messages.success(request, 'Mapel berhasil dihapus dari daftar ampuan.')
     return redirect('edit_guru', obj_id=guru.id)
+
+
+# =========================
+#  HALAMAN DAFTAR SISWA
+# =========================
+try:
+    from openpyxl import load_workbook  # untuk xlsx
+except Exception:
+    load_workbook = None
+
+
+def siswa(request):
+    from akademik.models import Kelas
+    semua_kelas = Kelas.objects.all().order_by('nama_kelas')
+    context = {
+        'title': 'Siswa',
+        'semua_kelas': semua_kelas,
+    }
+    return render(request, 'administrasi/siswa.html', context)
+
+from django.http import JsonResponse
+
+def get_siswa(request):
+    """Endpoint AJAX untuk pencarian & filter siswa (instan)."""
+    from akademik.models import Siswa, Kelas
+    q = request.GET.get('q', '').strip()
+    kelas_id = request.GET.get('kelas_id')
+
+    siswa_qs = Siswa.objects.select_related('kelas').all().order_by('nama')
+    if kelas_id:
+        try:
+            siswa_qs = siswa_qs.filter(kelas_id=int(kelas_id))
+        except ValueError:
+            pass
+    if q:
+        from django.db.models import Q
+        siswa_qs = siswa_qs.filter(
+            Q(nama__icontains=q) | Q(nisn__icontains=q) | Q(nipd__icontains=q)
+        )
+
+    def wali_of(s):
+        return s.nama_wali or (s.nama_ayah or s.nama_ibu) or ''
+
+    data = [{
+        'id': s.id,
+        'nama': s.nama,
+        'nisn': s.nisn,
+        'nipd': s.nipd or '',
+        'kelas': s.kelas.nama_kelas,
+        'wali': wali_of(s),
+        'no_siswa': s.no_siswa or '',
+        'no_ortu': s.no_ortu or '',
+    } for s in siswa_qs[:500]]
+
+    return JsonResponse({'items': data})
+
+
+
+# =========================
+#   IMPORT CSV SISWA
+# =========================
+
+@transaction.atomic
+def siswa_import(request):
+    """
+    Flow:
+    - GET: tampilkan form kosong
+    - POST (preview): baca file, validasi per baris, simpan hasil preview ke session, render preview
+    - POST (save): ambil preview dari session; jika masih ada error -> tolak; jika bersih -> simpan ke DB
+    """
+    SESSION_KEY = "siswa_import_preview"
+
+    def normalize_header(h):
+        return (h or '').strip().lower().replace(' ', '_')
+
+    def get(r, *keys):
+        for k in keys:
+            if k in r and r[k] != '':
+                return r[k]
+        return ''
+
+    # === SAVE (tanpa file) → gunakan data dari session ===
+    if request.method == 'POST' and request.POST.get('action') == 'save' and not request.FILES.get('file'):
+        preview_rows = request.session.get(SESSION_KEY, [])
+        if not preview_rows:
+            messages.error(request, "Sesi preview kosong atau kadaluarsa. Silakan upload file lagi.")
+            return redirect('siswa_import')
+
+        has_row_errors = any(r.get('errors') for r in preview_rows)
+        if has_row_errors:
+            messages.error(request, "Tidak dapat menyimpan: masih ada baris bermasalah (ditandai merah). Perbaiki dan upload ulang.")
+            context = {'title': 'Import Siswa', 'preview_rows': preview_rows, 'errors': [], 'has_row_errors': True}
+            return render(request, 'administrasi/siswa_import.html', context)
+
+        # Simpan ke DB
+        saved = 0
+        for r in preview_rows:
+            kelas_obj = Kelas.objects.get(nama_kelas=r['kelas'])  # sudah divalidasi ada
+            jk_val = (r['jk'] or '').upper()
+            jk_db = 'P' if jk_val in ('P', 'PEREMPUAN') else 'L'
+            tgl_obj = parse_date(r['tanggal_lahir'])
+            Siswa.objects.update_or_create(
+                nisn=r['nisn'],
+                defaults={
+                    'nama': r['nama'],
+                    'nipd': r['nipd'] or None,
+                    'jenis_kelamin': jk_db,
+                    'tempat_lahir': r['tempat_lahir'] or '',
+                    'tanggal_lahir': tgl_obj,
+                    'nama_ayah': r['nama_ayah'] or None,
+                    'nama_ibu': r['nama_ibu'] or None,
+                    'nama_wali': r['nama_wali'] or None,
+                    'kelas': kelas_obj,
+                    'no_siswa': r['no_siswa'] or None,
+                    'no_ortu': r['no_ortu'] or None,
+                }
+            )
+            saved += 1
+
+        # bersihkan session setelah simpan
+        try:
+            del request.session[SESSION_KEY]
+        except KeyError:
+            pass
+
+        messages.success(request, f'Berhasil menyimpan {saved} data siswa.')
+        return redirect('siswa')
+
+    # === PREVIEW (upload file) ===
+    if request.method == 'POST' and request.FILES.get('file'):
+        f = request.FILES['file']
+        name = f.name.lower()
+        rows = []
+        errors_global = []
+        preview_rows = []
+
+        # Baca file (CSV / Excel)
+        try:
+            if name.endswith('.csv'):
+                data = io.TextIOWrapper(f.file, encoding='utf-8', errors='ignore')
+                reader = csv.DictReader(data)
+                for r in reader:
+                    rows.append({normalize_header(k): (v or '').strip() for k, v in r.items()})
+            else:
+                from openpyxl import load_workbook
+                wb = load_workbook(f, data_only=True)
+                ws = wb.active
+                headers = [normalize_header(c.value) for c in next(ws.iter_rows(min_row=1, max_row=1))[0:ws.max_column]]
+                for row in ws.iter_rows(min_row=2, values_only=True):
+                    r = {}
+                    for idx, val in enumerate(row):
+                        key = headers[idx] if idx < len(headers) else f'col_{idx}'
+                        r[key] = (str(val).strip() if val is not None else '')
+                    rows.append(r)
+        except Exception as e:
+            errors_global.append(f'Gagal membaca file: {e}')
+
+        # Normalisasi + validasi per baris
+        for ix, r in enumerate(rows, start=2):
+            nama = get(r, 'nama', 'nama_siswa')
+            nisn = get(r, 'nisn')
+            nipd = get(r, 'nipd', 'nis')
+            kelas_nama = get(r, 'kelas', 'nama_kelas', 'rombel', 'kelas_rombel')
+            jk_raw = get(r, 'jk', 'jenis_kelamin')
+            tempat = get(r, 'tempat_lahir', 'tempat')
+            tgl_raw = get(r, 'tanggal_lahir', 'tgl_lahir', 'tanggal')
+            ayah = get(r, 'nama_ayah', 'ayah')
+            ibu = get(r, 'nama_ibu', 'ibu')
+            wali = get(r, 'nama_wali', 'wali')
+            no_siswa = get(r, 'no_siswa', 'hp_siswa', 'No. Siswa')
+            no_ortu = get(r, 'no_ortu', 'hp_ortu', 'No. Ortu')
+
+            row_errors = []
+            if not nama:
+                row_errors.append("Nama wajib diisi")
+            if not nisn:
+                row_errors.append("NISN wajib diisi")
+            if not kelas_nama:
+                row_errors.append("Kelas wajib diisi")
+
+            # kelas harus sudah ada (Kelas punya relasi OneToOne ke guru)
+            kelas_obj = None
+            if kelas_nama:
+                kelas_obj = Kelas.objects.filter(nama_kelas=kelas_nama).first()
+                if not kelas_obj:
+                    row_errors.append(f"Kelas '{kelas_nama}' belum ada di database")
+
+            # tanggal lahir wajib (model DateField tanpa null=True)
+            tgl_obj = parse_date(tgl_raw) if tgl_raw else None
+            if not tgl_obj:
+                row_errors.append("Tanggal lahir wajib & format YYYY-MM-DD")
+
+            preview_rows.append({
+                'rownum': ix,
+                'errors': row_errors,
+                'nama': nama,
+                'nisn': nisn,
+                'nipd': nipd,
+                'kelas': kelas_nama,
+                'jk': jk_raw,
+                'tempat_lahir': tempat,
+                'tanggal_lahir': tgl_raw,
+                'nama_ayah': ayah,
+                'nama_ibu': ibu,
+                'nama_wali': wali,
+                'no_siswa': no_siswa,
+                'no_ortu': no_ortu,
+            })
+
+        has_row_errors = any(r['errors'] for r in preview_rows)
+
+        # Simpan ke session untuk dipakai saat klik Simpan
+        request.session[SESSION_KEY] = preview_rows
+
+        context = {
+            'title': 'Import Siswa',
+            'preview_rows': preview_rows,
+            'errors': errors_global,
+            'has_row_errors': has_row_errors,
+        }
+        return render(request, 'administrasi/siswa_import.html', context)
+
+    # GET
+    context = {'title': 'Import Siswa'}
+    return render(request, 'administrasi/siswa_import.html', context)
+
+

@@ -31,4 +31,9 @@ urlpatterns = [
     
     # URL untuk AJAX
     path('get_guru/', views.get_guru, name='get_guru'),
+
+    path('get_siswa/', views.get_siswa, name='get_siswa'),
+    # pastikan ini ada
+    path('siswa/import/', views.siswa_import, name='siswa_import'),
+
 ]

@@ -29,6 +29,26 @@ class Role(models.TextChoices):
     ADMIN = 'Admin', _('Admin')
     GURU = 'Guru', _('Guru')
 
+class Jenjang(models.TextChoices):
+    SD = 'SD', _('SD')
+    SMP = 'SMP', _('SMP')
+    SMA = 'SMA', _('SMA')
+    SMK = 'SMK', _('SMK')
+
+class Tingkatan(models.TextChoices):
+    SATU = '1', _('Tingkat/Kelas 1')
+    DUA = '2', _('Tingkat/Kelas 2')
+    TIGA = '3', _('Tingkat/Kelas 3')
+    EMPAT = '4', _('Tingkat/Kelas 4')
+    LIMA = '5', _('Tingkat/Kelas 5')
+    ENAM = '6', _('Tingkat/Kelas 6')
+    TUJUH = '7', _('Tingkat/Kelas 7')
+    DELAPAN = '8', _('Tingkat/Kelas 8')
+    SEMBILAN = '9', _('Tingkat/Kelas 9')
+    SEPULUH = '10', _('Tingkat/Kelas 10')
+    SEBELAS = '11', _('Tingkat/Kelas 11')
+    DUABELAS = '12', _('Tingkat/Kelas 12')
+    TIGABELAS = '13', _('Tingkat/Kelas 13')
 
 class Mapel(models.Model):
     kode_mapel = models.CharField(max_length=5)
@@ -71,24 +91,25 @@ class GuruMapel(models.Model):
         return self.guru.nama + ' | ' + self.mapel.nama_mapel
 
 class Kelas(models.Model):
-    nama_kelas = models.CharField(max_length=100)
-    guru = models.OneToOneField(UserGuru, on_delete=models.CASCADE)
+    nama_kelas = models.CharField(max_length=100,unique=True)
+    guru = models.OneToOneField(UserGuru, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return self.nama_kelas
 
 class Siswa(models.Model):
     nama = models.CharField(max_length=100)
-    nipd = models.CharField(max_length=20)
+    nipd = models.CharField(max_length=20, null=True, blank=True)
     jenis_kelamin = models.CharField(max_length=1, choices=JenisKelamin.choices)
     nisn = models.CharField(max_length=20)
     tempat_lahir = models.CharField(max_length=100)
     tanggal_lahir = models.DateField()
-    nama_ayah = models.CharField(max_length=100)
-    nama_ibu = models.CharField(max_length=100)
+    nama_ayah = models.CharField(max_length=100, null=True, blank=True)
+    nama_ibu = models.CharField(max_length=100, null=True, blank=True)
+    nama_wali = models.CharField(max_length=100, null=True, blank=True)
     kelas = models.ForeignKey(Kelas, on_delete=models.CASCADE)
-    no_siswa = models.CharField(max_length=20)
-    no_ortu = models.CharField(max_length=20)
+    no_siswa = models.CharField(max_length=20, null=True, blank=True)
+    no_ortu = models.CharField(max_length=20, null=True, blank=True)
 
     def __str__(self):
         return self.nama
