@@ -1,0 +1,84 @@
+{% extends "administrasi/base.html" %}
+
+{% block isi %}
+    <div class=" w-full h-[200%] md:h-full grid grid-cols-1 md:grid-cols-2 xl:grid-cols-15 xl:grid-rows-12 gap-2.5 xl:gap-5">
+
+        <div class="bg-white p-3 xl:col-start-1 xl:row-start-1 xl:col-span-full xl:row-span-1 rounded-2xl shadow-sm md:shadow-xl">
+
+        </div>
+
+        <div class="bg-white p-3 md:col-span-2 xl:col-span-6 xl:row-start-2 xl:row-span-7 rounded-2xl shadow-sm md:shadow-xl flex flex-col gap-2">
+            <div class="w-full h-full bg-amber-300 rounded-2xl flex items-center justify-center">
+                <video id="video" class="w-full h-full rounded-2xl" autoplay></video>
+                <canvas id="canvas" class="w-full h-full absolute top-0 left-0"></canvas>  
+            </div>
+            <div class="flex w-full h-fit">
+                <button class="w-fit px-4 py-2 bg-blue-500 text-white rounded-full" >
+                    Mulai Presensi
+                </button>
+            </div>
+        </div>
+        <div class="bg-white p-4 xl:row-start-9 xl:col-span-6 xl:row-span-4 rounded-2xl shadow-sm md:shadow-xl">
+            <div class="w-full h-3.5 flex flex-row items-center justify-between gap-2">
+                <h3 class="whitespace-nowrap">wajah terdeteksi</h3>
+                <div class="bg-gray-700 h-1 w-full rounded-full"></div>
+            </div>
+            <div class="w-full h-full overflow-y-scroll ">
+                <table class="mt-2.5 w-full border-collapse overflow-hidden">
+                    <thead>
+                        <tr>
+                            <th class="w-12 p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">No</th>
+                            <th class="w-full p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">Nama</th>
+                            <th class="w-44 p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">Persentase</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="p-3 text-left">1</td>
+                            <td class="p-3 text-left">Nama</td>
+                            <td class="p-3 text-center">80%</td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 text-left">2</td>
+                            <td class="p-3 text-left">Nama</td>
+                            <td class="p-3 text-center">78%</td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 text-left">3</td>
+                            <td class="p-3 text-left">Nama</td>
+                            <td class="p-3 text-center">75%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="bg-white p-4 xl:col-start-7 xl:row-start-2 xl:col-span-9 xl:row-span-11 rounded-2xl shadow-sm md:shadow-xl">
+            <div class="w-full h-3.5 flex flex-row items-center justify-between gap-2">
+                <h3 class="whitespace-nowrap" >hasil presensi</h3>
+                <div class="bg-gray-700 h-1 w-full rounded-full"></div>
+            </div>
+            <div class="w-full h-full overflow-y-scroll">
+                <table class="mt-2.5 w-full border-collapse overflow-hidden">
+                    <thead>
+                        <tr>
+                            <th class="w-12 p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">No</th>
+                            <th class="w-full p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">Nama</th>
+                            <th class="w-44 p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">Persentase</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="p-3 text-left">1</td>
+                            <td class="p-3 text-left">Nama</td>
+                            <td class="p-3 text-left">80%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock isi %}
+
+{% block extra_js %}
+
+{% endblock extra_js %}

@@ -27,7 +27,7 @@ def presensi(request):
     context = {
         'title': 'Presensi',
     }
-    return render(request, 'administrasi/presensi.html', context)
+    return render(request, 'administrasi/presensi/presensi.html', context)
 
 def rekap(request):
     context = {
@@ -48,7 +48,7 @@ def guru(request):
         'semua_objek': semua_guru,
         'page': 'guru',
     }
-    return render(request, 'administrasi/guru.html', context)
+    return render(request, 'administrasi/guru/guru.html', context)
 
 def kelas(request):
     semua_kelas = Kelas.objects.all()
@@ -207,7 +207,7 @@ def guru_edit(request, obj_id=None):
         'obj': user_guru,
         'list_gurumapel': list_gm,
     }
-    return render(request, 'administrasi/guru_edit.html', context)
+    return render(request, 'administrasi/guru/guru_edit.html', context)
 
 def hapus(request, page, obj_id):
     model_map = {
@@ -275,7 +275,7 @@ def guru_mapel_tambah(request, guru_id):
         'guru': guru,
         'semua_mapel': semua_mapel,
     }
-    return render(request, 'administrasi/guru_mapel_tambah.html', context)
+    return render(request, 'administrasi/guru/guru_mapel_tambah.html', context)
 
 @transaction.atomic
 def guru_mapel_hapus(request, guru_id, gm_id):
@@ -296,19 +296,17 @@ except Exception:
 
 
 def siswa(request):
-    from akademik.models import Kelas
     semua_kelas = Kelas.objects.all().order_by('nama_kelas')
     context = {
         'title': 'Siswa',
         'semua_kelas': semua_kelas,
     }
-    return render(request, 'administrasi/siswa.html', context)
+    return render(request, 'administrasi/siswa/siswa.html', context)
 
 from django.http import JsonResponse
 
 def get_siswa(request):
     """Endpoint AJAX untuk pencarian & filter siswa (instan)."""
-    from akademik.models import Siswa, Kelas
     q = request.GET.get('q', '').strip()
     kelas_id = request.GET.get('kelas_id')
 
@@ -504,10 +502,10 @@ def siswa_import(request):
             'errors': errors_global,
             'has_row_errors': has_row_errors,
         }
-        return render(request, 'administrasi/siswa_import.html', context)
+        return render(request, 'administrasi/siswa/siswa_import.html', context)
 
     # GET
     context = {'title': 'Import Siswa'}
-    return render(request, 'administrasi/siswa_import.html', context)
+    return render(request, 'administrasi/siswa/siswa_import.html', context)
 
 

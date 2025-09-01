@@ -29,6 +29,8 @@ class Role(models.TextChoices):
     ADMIN = 'Admin', _('Admin')
     GURU = 'Guru', _('Guru')
 
+#UNTUK JENJANG DAN TINGKATAN
+#MASIH DALAM TAHAP PENGEMBANGAN
 class Jenjang(models.TextChoices):
     SD = 'SD', _('SD')
     SMP = 'SMP', _('SMP')

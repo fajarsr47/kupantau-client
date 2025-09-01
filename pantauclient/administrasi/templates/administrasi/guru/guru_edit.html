@@ -55,8 +55,7 @@
                     <div class="flex w-full justify-between items-end">
                         <div class="w-44">
                             <label>Role</label>
-                            <select name="role" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
-                        focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
+                            <select name="role" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5">
                             {% for val,label in user_form.role.field.choices %}
                                 <option value="{{ val }}" {% if user_form.role.value == val %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
