@@ -1,7 +1,7 @@
 import re
 from multiprocessing import context
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, HttpResponseBadRequest
 from django.contrib.auth import authenticate, login
 from django.contrib import messages
 from akademik.models import Kelas, Siswa, Mapel, JamPelajaran, Jadwal, UserGuru, ProfileGuru, GuruMapel
@@ -13,6 +13,10 @@ from django.db.models import Value, CharField
 from django.db.models.expressions import Case, When
 import csv, io, re
 from django.utils.dateparse import parse_date
+import json
+from django.views.decorators.http import require_POST
+from django.utils import timezone
+
 
 # Create your views here.
 def index(request):
@@ -22,12 +26,6 @@ def index(request):
         'icon': 'bg-[#3d3d3d]',
     }
     return render(request, 'administrasi/index.html', context)
-
-def presensi(request):
-    context = {
-        'title': 'Presensi',
-    }
-    return render(request, 'administrasi/presensi/presensi.html', context)
 
 def rekap(request):
     context = {
@@ -338,12 +336,6 @@ def get_siswa(request):
 
     return JsonResponse({'items': data})
 
-
-
-# =========================
-#   IMPORT CSV SISWA
-# =========================
-
 @transaction.atomic
 def siswa_import(request):
     """
@@ -509,3 +501,162 @@ def siswa_import(request):
     return render(request, 'administrasi/siswa/siswa_import.html', context)
 
 
+# =========================
+#   Halaman Presensi
+# =========================
+def deteksi(request):
+    context = {
+        'title': 'Presensi Deteksi Wajah',
+    }
+    return render(request, 'administrasi/presensi/deteksi.html', context)
+
+def manual(request):
+    context = {
+        'title': 'Presensi Manual',
+    }
+    return render(request, 'administrasi/presensi/manual.html', context)
+
+def import_gambar(request):
+    context = {
+        'title': 'Presensi Scan Gambar',
+    }
+    return render(request, 'administrasi/presensi/import_gambar.html', context)
+
+@require_POST
+def deteksi_frame(request):
+    """
+    Terima 1 frame (base64) dari browser, jalankan face_detect, balikan hasil.
+    Body JSON: { "image": "data:image/jpeg;base64,...." }
+    """
+    data = json.loads(request.body.decode('utf-8'))
+    img_b64 = data.get('image')
+    if not img_b64:
+        return HttpResponseBadRequest("image wajib diisi")
+
+    from akademik.face_detect import detect_from_base64
+    detected = detect_from_base64(img_b64)
+    # Tambahkan timestamp server (Asia/Jakarta)
+    ts = timezone.localtime()
+    ts_iso = ts.isoformat()
+    for d in detected:
+        d['timestamp'] = ts_iso
+
+    return JsonResponse({'detected': detected})
+
+
+@require_POST
+@transaction.atomic
+def deteksi_save(request):
+    """
+    Simpan hasil presensi:
+      Body JSON:
+      {
+        "detected": [ {"nisn":"...", "timestamp":"...."}, ... ]
+      }
+    Logika:
+      - Yang 'detected' dicatat Hadir (H) pada tanggal ts.date() & waktu ts.
+      - Semua siswa lain (seluruh sekolah) yang belum punya catatan tanggal ts.date() → dicatat Alpha (A).
+      - Tidak menurunkan H menjadi A (aman idempotent untuk tanggal ts).
+    """
+    from akademik.models import Siswa, PresensiSekolah, PresensiStatus
+    payload = json.loads(request.body.decode('utf-8'))
+    arr = payload.get('detected') or []
+    if not isinstance(arr, list):
+        return HttpResponseBadRequest("Format 'detected' tidak valid")
+
+    # Kumpulkan per tanggal (jika timestamp beda tanggal—umumnya sama/hari ini)
+    by_date = {}
+    for it in arr:
+        nisn = (it.get('nisn') or '').strip()
+        ts = it.get('timestamp')
+        if not nisn or not ts:
+            continue
+        try:
+            ts_dt = timezone.datetime.fromisoformat(ts)
+            if timezone.is_naive(ts_dt):
+                ts_dt = timezone.make_aware(ts_dt, timezone.get_current_timezone())
+        except Exception:
+            # fallback: pakai waktu server
+            ts_dt = timezone.localtime()
+        d = ts_dt.date()
+        by_date.setdefault(d, []).append((nisn, ts_dt))
+
+    total_saved_h = 0
+    total_mark_a = 0
+
+    for d, items in by_date.items():
+        # map nisn->waktu paling awal (kalau terdeteksi berkali2)
+        seen = {}
+        for nisn, ts_dt in items:
+            seen.setdefault(nisn, ts_dt)
+            # ambil waktu terawal (gate masuk)
+            if ts_dt < seen[nisn]:
+                seen[nisn] = ts_dt
+
+        # 1) Tandai HADIR
+        nisn_set = set(seen.keys())
+        siswa_map = {s.nisn: s for s in Siswa.objects.filter(nisn__in=nisn_set)}
+        for nisn, ts_dt in seen.items():
+            s = siswa_map.get(nisn)
+            if not s: 
+                continue  # nisn tak dikenal → abaikan
+            obj, created = PresensiSekolah.objects.update_or_create(
+                siswa=s, tanggal=d,
+                defaults={'status': PresensiStatus.H, 'waktu': ts_dt}
+            )
+            total_saved_h += 1
+
+        # 2) Tandai ALPHA utk siswa lain yg belum punya catatan di tanggal d
+        #    Penting: jangan override yang sudah H/S/I → hanya create jika belum ada record
+        siswa_all = Siswa.objects.all().values('id', 'nisn')
+        existing_ids = set(
+            PresensiSekolah.objects.filter(tanggal=d).values_list('siswa_id', flat=True)
+        )
+        create_alpha = []
+        for row in siswa_all:
+            sid, snisn = row['id'], row['nisn']
+            if sid in existing_ids:
+                continue
+            create_alpha.append(PresensiSekolah(
+                siswa_id=sid,
+                tanggal=d,
+                status=PresensiStatus.A,
+                waktu=timezone.make_aware(timezone.datetime.combine(d, timezone.datetime.min.time()))
+            ))
+        if create_alpha:
+            PresensiSekolah.objects.bulk_create(create_alpha, ignore_conflicts=True)
+            total_mark_a += len(create_alpha)
+
+    return JsonResponse({'ok': True, 'hadir_saved': total_saved_h, 'alpha_created': total_mark_a})
+
+@require_POST
+def deteksi_resolve(request):
+    """
+    Body JSON: { "nisns": ["1234567890", ...] }
+    Return: { items: [ {nisn, nama, kelas}, ... ] }
+    """
+    import json
+    try:
+        payload = json.loads(request.body.decode('utf-8'))
+    except Exception:
+        return HttpResponseBadRequest("Body JSON tidak valid")
+
+    nisns = payload.get('nisns') or []
+    if not isinstance(nisns, list) or not all(isinstance(x, str) for x in nisns):
+        return HttpResponseBadRequest("nisns harus list of string")
+
+    from akademik.models import Siswa
+    qs = Siswa.objects.select_related('kelas').filter(nisn__in=nisns)
+    items = []
+    for s in qs:
+        items.append({
+            'nisn': s.nisn,
+            'nama': s.nama,
+            'kelas': getattr(getattr(s, 'kelas', None), 'nama_kelas', '-')
+        })
+    # untuk NISN yang belum dikenal di DB, tetap kembalikan placeholder
+    known = set(x['nisn'] for x in items)
+    for z in nisns:
+        if z not in known:
+            items.append({'nisn': z, 'nama': '(tidak dikenal)', 'kelas': '-'})
+    return JsonResponse({'items': items})

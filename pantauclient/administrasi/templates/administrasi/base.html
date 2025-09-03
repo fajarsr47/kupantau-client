@@ -36,13 +36,13 @@
                     <p class="ms-2">DASHBOARD</p>
                 </a>
                 <a class="flex flex-row w-[200px] px-1 justify-start items-center h-fit rounded-xl transition-all duration-200
-                    {% if url_name == 'presensi' %}
+                    {% if url_name in aktive_dalam_presensi %}
                         text-white bg-[#84A7FF]
                     {% else %}
                         shadow-md hover:bg-[#D8ECFF]
-                    {% endif %}" href="{% url 'presensi' %}">
+                    {% endif %}" href="{% url 'deteksi' %}">
                     <img src="
-                        {% if url_name == 'presensi' %}
+                        {% if url_name in aktive_dalam_presensi %}
                             {% static 'icon/presensi-on.svg' %}
                         {% else %}
                             {% static 'icon/presensi-off.svg' %}

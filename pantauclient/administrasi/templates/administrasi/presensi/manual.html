@@ -1,0 +1,14 @@
+{% extends "administrasi/presensi/presensi.html" %}
+{% load static %}
+{% block presensi %}
+    <div class="bg-white p-3 md:col-span-2 xl:col-span-6 xl:row-start-2 xl:row-span-7 rounded-2xl shadow-sm md:shadow-xl flex flex-col gap-2">
+        <div class="w-full h-full bg-amber-300 rounded-2xl flex items-center justify-center">
+            <video id="video" class="w-full h-full rounded-2xl" autoplay></video>
+        </div>
+        <div class="flex w-full h-fit">
+            <button class="w-fit px-4 py-2 bg-blue-500 text-white rounded-full">
+                Mulai Presensi
+            </button>
+        </div>
+    </div>
+{% endblock presensi %}

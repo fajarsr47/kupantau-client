@@ -2,38 +2,60 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # =========================
+    #   Dashboard
+    # =========================
     path('', views.index, name='index'),
-    path('presensi', views.presensi, name='presensi'),
-    path('rekap', views.rekap, name='rekap'),
-    path('pengaturan', views.pengaturan, name='pengaturan'),
-    path('siswa', views.siswa, name='siswa'),
-    path('guru', views.guru, name='guru'),
 
-    # URL untuk Manajemen Jadwal dan Kelas
+    # =========================
+    #   Presensi
+    # =========================
+    path('deteksi', views.deteksi, name='deteksi'),
+    # Presensi deteksi realtime
+    path('presensi/deteksi/frame', views.deteksi_frame, name='deteksi_frame'),
+    path('presensi/deteksi/save', views.deteksi_save, name='deteksi_save'),
+    path('presensi/deteksi/resolve', views.deteksi_resolve, name='deteksi_resolve'),
+
+    path('import_gambar', views.import_gambar, name='import_gambar'),
+    path('manual', views.manual, name='manual'),
+
+    # =========================
+    #   Rekap
+    # =========================
+    path('rekap', views.rekap, name='rekap'),
+
+    # =========================
+    #   Pengaturan
+    # =========================
+    path('pengaturan', views.pengaturan, name='pengaturan'),
+
+    # =========================
+    #   Siswa
+    # =========================
+    path('siswa', views.siswa, name='siswa'),
+    path('get_siswa/', views.get_siswa, name='get_siswa'),
+    path('siswa/import/', views.siswa_import, name='siswa_import'),
+
+    # =========================
+    #   Guru
+    # =========================
+    path('guru', views.guru, name='guru'),
+    path('guru/tambah/', views.guru_edit, name='tambah_guru'),
+    path('guru/edit/<int:obj_id>/', views.guru_edit, name='edit_guru'),
+    path('guru/<int:guru_id>/mapel/tambah/', views.guru_mapel_tambah, name='tambah_mapel_guru'),
+    path('guru/<int:guru_id>/mapel/<int:gm_id>/hapus/', views.guru_mapel_hapus, name='hapus_mapel_guru'),
+    # URL untuk AJAX
+    path('get_guru/', views.get_guru, name='get_guru'),
+    
+    
+    # =========================
+    #   Jadwal dan Kelas
+    # =========================
     path('kelas', views.kelas, name='kelas'),
     path('jadwal', views.jadwal, name='jadwal'),
     path('mapel', views.mapel, name='mapel'),
     path('jampel', views.jampel, name='jampel'),
-
-    # --- URL KHUSUS Guru (Dipindahkan ke atas) ---
-    path('guru/tambah/', views.guru_edit, name='tambah_guru'),
-    path('guru/edit/<int:obj_id>/', views.guru_edit, name='edit_guru'),
-
-    path('guru/<int:guru_id>/mapel/tambah/', views.guru_mapel_tambah, name='tambah_mapel_guru'),
-    path('guru/<int:guru_id>/mapel/<int:gm_id>/hapus/', views.guru_mapel_hapus, name='hapus_mapel_guru'),
-
-    # --- URL Generik untuk Jadwal dan Kelas ---
     path('<str:page>/tambah/', views.jadwal_edit, name='tambah'),
     path('<str:page>/edit/<int:obj_id>/', views.jadwal_edit, name='edit'),
-
-    # URL Hapus (bisa tetap di sini)
     path('<str:page>/hapus/<int:obj_id>/', views.hapus, name='hapus'),
-    
-    # URL untuk AJAX
-    path('get_guru/', views.get_guru, name='get_guru'),
-
-    path('get_siswa/', views.get_siswa, name='get_siswa'),
-    # pastikan ini ada
-    path('siswa/import/', views.siswa_import, name='siswa_import'),
-
 ]

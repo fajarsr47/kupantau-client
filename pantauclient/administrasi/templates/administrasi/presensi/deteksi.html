@@ -1,0 +1,219 @@
+{% extends "administrasi/presensi/presensi.html" %}
+{% load static %}
+{% block presensi %}
+    <div class="bg-white aspect-square md:aspect-auto p-3 md:col-span-2 md:row-start-2 md:row-span-7 xl:col-span-6 xl:row-start-2 xl:row-span-7 rounded-2xl shadow-sm md:shadow-xl flex flex-col gap-2">
+        <video id="videoCam" class="w-full h-[90%] rounded-lg bg-black" autoplay playsinline muted></video>
+        <div class="flex w-full h-fit gap-2.5">
+            <button id="btnMulai" class="w-full justify-center px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-2xl">
+                Mulai Deteksi
+            </button>
+            <button id="btnStop" class="w-full justify-center px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-2xl">
+                Stop
+            </button>
+        </div>
+    </div>
+    <div class="hidden md:block bg-white p-4 md:row-start-9 md:row-span-7 xl:row-start-9 xl:col-span-6 xl:row-span-4 rounded-2xl shadow-sm md:shadow-xl">
+        <div class="w-full h-3.5 flex flex-row items-center justify-between gap-2">
+            <h3 class="whitespace-nowrap">wajah terdeteksi</h3>
+            <div class="bg-gray-700 h-1 w-full rounded-full"></div>
+        </div>
+        <div class="w-full h-full overflow-y-scroll ">
+            <table class="mt-2.5 w-full border-collapse overflow-hidden">
+                <thead>
+                    <tr>
+                        <th class="w-12 p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">No</th>
+                        <th class="w-full p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">Nama</th>
+                        <th class="w-44 p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">Persentase</th>
+                    </tr>
+                </thead>
+                <tbody id="listDeteksi">
+                    <tr>
+                        <td class="p-3 text-left" colspan="3"><span class="text-sm text-gray-500">Belum ada wajah terdeteksi…</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="bg-white p-4 xl:col-start-7 md:row-start-9 md:col-start-2 md:row-span-7 xl:row-start-2 xl:col-span-9 xl:row-span-11 rounded-2xl shadow-sm md:shadow-xl flex flex-col">
+        <div class="w-full h-3.5 flex flex-row items-center justify-between gap-2">
+            <h3 class="whitespace-nowrap" >hasil presensi</h3>
+            <div class="bg-gray-700 h-1 w-full rounded-full"></div>
+        </div>
+        <div class="flex-1 overflow-y-scroll">
+            <table class="mt-2.5 w-full border-collapse overflow-hidden">
+                <thead>
+                    <tr>
+                        <th class="w-12 p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">No</th>
+                        <th class="w-30 p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">NISN</th>
+                        <th class="p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">Nama</th>
+                        <th class="w-40 p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">Kelas</th>
+                    </tr>
+                </thead>
+                <tbody id="listPresensi">
+                    <tr>
+                        <td class="p-3 text-left" colspan="4"><span class="text-sm text-gray-500">Belum ada data presensi. Mulai deteksi terlebih dahulu.</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <button id="btnSimpanKirim" class="w-full justify-center px-4 py-2 mt-4 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-2xl">
+            Simpan dan Kirim
+        </button>
+    </div>
+{% endblock presensi %}
+
+{% block extra_js %}
+<script>
+(function(){
+  const elVideo  = document.getElementById('videoCam');
+  const btnStart = document.getElementById('btnMulai');
+  const btnStop  = document.getElementById('btnStop');
+  const tbodyDet = document.getElementById('listDeteksi');
+  const tbodyPre = document.getElementById('listPresensi');
+  const btnSave  = document.getElementById('btnSimpanKirim');
+
+  // CSRF Django
+  function getCookie(name) {
+    const v = ('; ' + document.cookie).split('; ' + name + '=');
+    if (v.length === 2) return v.pop().split(';').shift();
+  }
+  const csrftoken = getCookie('csrftoken');
+  const headers = {'Content-Type':'application/json', 'X-CSRFToken': csrftoken};
+
+  let stream = null, timer = null;
+
+  // Map NISN -> { ts: ISOString, label, nama? }
+  const detectedMap = new Map();
+
+  function renderDeteksi(list){
+    if(!list || !list.length){
+      tbodyDet.innerHTML = `
+        <tr><td class="p-3 text-left" colspan="3">
+          <span class="text-sm text-gray-500">Belum ada wajah terdeteksi…</span>
+        </td></tr>`;
+      return;
+    }
+    tbodyDet.innerHTML = list.map((d,i)=>`
+      <tr>
+        <td class="p-3 text-left">${i+1}</td>
+        <td class="p-3 text-left">${d.nama || d.label} <span class="text-gray-500">(${d.nisn||'-'})</span></td>
+        <td class="p-3 text-center">${d.confidence}%</td>
+      </tr>`).join('');
+  }
+
+  // Lookup biodata siswa ke DB berdasarkan NISN
+  async function resolveBiodata() {
+    const nisns = Array.from(detectedMap.keys());
+    if(nisns.length === 0) {
+      tbodyPre.innerHTML = `
+        <tr><td class="p-3 text-left" colspan="4">
+          <span class="text-sm text-gray-500">Belum ada data presensi. Mulai deteksi terlebih dahulu.</span>
+        </td></tr>`;
+      return;
+    }
+    try{
+      const res = await fetch("{% url 'deteksi_resolve' %}", {
+        method:'POST', headers, body: JSON.stringify({nisns})
+      });
+      const {items=[]} = await res.json();
+      // urutkan sesuai urutan masuk (waktu terawal)
+      const rows = [];
+      let i = 1;
+      items.forEach(it=>{
+        const rec = detectedMap.get(it.nisn);
+        if(!rec) return;
+        rows.push(`
+          <tr>
+            <td class="p-3 text-left">${i++}</td>
+            <td class="p-3 text-left">${it.nisn}</td>
+            <td class="p-3 text-left">${it.nama || (rec.label)}</td>
+            <td class="p-3 text-left">${it.kelas || '-'}</td>
+          </tr>`);
+      });
+      tbodyPre.innerHTML = rows.join('');
+    }catch(e){
+      // fallback minimal jika gagal resolve
+      const rows = []; let i=1;
+      detectedMap.forEach((v, nisn)=>{
+        rows.push(`
+          <tr>
+            <td class="p-3 text-left">${i++}</td>
+            <td class="p-3 text-left">${nisn}</td>
+            <td class="p-3 text-left">${v.label}</td>
+            <td class="p-3 text-left">-</td>
+          </tr>`);
+      });
+      tbodyPre.innerHTML = rows.join('');
+    }
+  }
+
+  function captureAndSend(){
+    if(!elVideo) return;
+    const c = document.createElement('canvas');
+    c.width = elVideo.videoWidth || 640;
+    c.height = elVideo.videoHeight || 480;
+    c.getContext('2d').drawImage(elVideo, 0, 0, c.width, c.height);
+    const dataURL = c.toDataURL('image/jpeg', 0.6);
+
+    fetch("{% url 'deteksi_frame' %}", { method:'POST', headers, body: JSON.stringify({image: dataURL}) })
+      .then(r=>r.json())
+      .then(({detected})=>{
+        detected = detected || [];
+        renderDeteksi(detected);
+
+        // simpan waktu TERAWAL per NISN (gate masuk)
+        let changed = false;
+        detected.forEach(d=>{
+          if(!d.nisn) return;
+          if(!detectedMap.has(d.nisn)) {
+            detectedMap.set(d.nisn, { ts: d.timestamp, label: d.nama || d.label });
+            changed = true;
+          } else {
+            const oldTs = new Date(detectedMap.get(d.nisn).ts);
+            const newTs = new Date(d.timestamp);
+            if(newTs < oldTs) {
+              detectedMap.set(d.nisn, { ts: d.timestamp, label: d.nama || d.label });
+              changed = true;
+            }
+          }
+        });
+        if(changed) resolveBiodata();
+      })
+      .catch(()=>{ /* biarkan loop lanjut */ });
+  }
+
+  async function start(){
+    if(stream) return;
+    try{
+      stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}, audio:false});
+      elVideo.srcObject = stream; await elVideo.play();
+      // kirim frame periodik
+      timer = setInterval(captureAndSend, 800);
+    }catch(e){ alert('Gagal akses kamera: '+e.message); }
+  }
+  function stop(){
+    if(timer){ clearInterval(timer); timer=null; }
+    if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+  }
+  function save(){
+    if(detectedMap.size===0){ alert('Belum ada siswa yang terdeteksi.'); return; }
+    const detected = []; detectedMap.forEach((v, nisn)=>detected.push({nisn, timestamp: v.ts}));
+    fetch("{% url 'deteksi_save' %}", { method:'POST', headers, body: JSON.stringify({detected}) })
+      .then(r=>r.json())
+      .then(res=>{
+        if(res.ok) alert(`Tersimpan. Hadir: ${res.hadir_saved}, Alpha dibuat: ${res.alpha_created}.`);
+        else alert('Gagal menyimpan.');
+      })
+      .catch(()=>alert('Gagal menyimpan.'));
+  }
+
+  btnStart && btnStart.addEventListener('click', start);
+  btnStop  && btnStop.addEventListener('click', stop);
+  btnSave  && btnSave.addEventListener('click', save);
+
+  // render awal
+  tbodyDet.innerHTML = `<tr><td class="p-3 text-left" colspan="3"><span class="text-sm text-gray-500">Belum ada wajah terdeteksi…</span></td></tr>`;
+  tbodyPre.innerHTML = `<tr><td class="p-3 text-left" colspan="4"><span class="text-sm text-gray-500">Belum ada data presensi. Mulai deteksi terlebih dahulu.</span></td></tr>`;
+})();
+</script>
+{% endblock extra_js %}
