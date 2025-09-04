@@ -147,8 +147,10 @@
     }
   }
 
+  let isProcessing = false;
   function captureAndSend(){
-    if(!elVideo) return;
+    if(!elVideo || isProcessing) return; // <-- JIKA SEDANG MEMPROSES, JANGAN LAKUKAN APAPUN
+    isProcessing = true; // <-- TANDAI SEDANG MEMPROSES
     const c = document.createElement('canvas');
     c.width = elVideo.videoWidth || 640;
     c.height = elVideo.videoHeight || 480;
@@ -179,7 +181,10 @@
         });
         if(changed) resolveBiodata();
       })
-      .catch(()=>{ /* biarkan loop lanjut */ });
+      .catch(()=>{ /* biarkan loop lanjut */ })
+      .finally(() => {
+        isProcessing = false; // <-- TANDAI SELESAI MEMPROSES, BAIK BERHASIL MAUPUN GAGAL
+      });
   }
 
   async function start(){

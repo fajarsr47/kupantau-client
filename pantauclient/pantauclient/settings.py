@@ -26,7 +26,9 @@ SECRET_KEY = 'django-insecure-e-1jkw*c6l05kw#2r5(=@_l6p05qto&##@)bv+&=$ybg7m#bdj
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*', 'special-monkfish-flowing.ngrok-free.app']
+
+CSRF_TRUSTED_ORIGINS = ['https://special-monkfish-flowing.ngrok-free.app']
 
 
 # Application definition
