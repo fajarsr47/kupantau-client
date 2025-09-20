@@ -17,12 +17,18 @@ urlpatterns = [
     path('presensi/deteksi/resolve', views.deteksi_resolve, name='deteksi_resolve'),
 
     path('import_gambar', views.import_gambar, name='import_gambar'),
+    
     path('manual', views.manual, name='manual'),
+    path('presensi/manual/get-siswa', views.get_siswa_presensi_manual, name='get_siswa_presensi_manual'),
+    path('presensi/manual/save', views.save_presensi_manual, name='save_presensi_manual'),
 
     # =========================
     #   Rekap
     # =========================
     path('rekap', views.rekap, name='rekap'),
+    path('rekap/get-data', views.get_rekap_data, name='get_rekap_data'),
+    # -- excel --
+    path('rekap/export-excel', views.export_rekap_excel, name='export_rekap_excel'),
 
     # =========================
     #   Pengaturan

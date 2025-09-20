@@ -1,81 +1,211 @@
 {% extends "administrasi/presensi/presensi.html" %}
 {% load static %}
 {% block presensi %}
-    <div class="bg-white p-3 md:col-span-2 md:row-start-2 md:row-span-7 xl:col-span-6 xl:row-start-2 xl:row-span-7 rounded-2xl shadow-sm md:shadow-xl flex flex-col gap-2">
-        <div class="w-full h-full bg-amber-300 rounded-2xl flex items-center justify-center">
-            <video id="video" class="w-full h-full rounded-2xl" autoplay></video>
-            <canvas id="canvas" class="w-full h-full absolute top-0 left-0 hidden"></canvas>  
+    <div class="bg-white aspect-square md:aspect-auto p-3 md:col-span-2 md:row-start-2 md:row-span-7 xl:col-span-6 xl:row-start-2 xl:row-span-7 rounded-2xl shadow-sm md:shadow-xl flex flex-col gap-2">
+        <div class="relative w-full h-[90%] rounded-lg bg-black flex items-center justify-center">
+            <img id="image-preview" class="w-full h-full object-contain rounded-lg hidden" src="" alt="Pratinjau Gambar">
+            <div id="placeholder" class="absolute text-gray-400 flex">Pilih gambar untuk pratinjau</div>
+            
+            <div id="loading-indicator" class="absolute top-0 left-0 w-full h-full bg-gray-900 bg-opacity-75 flex-col items-center justify-center rounded-lg hidden">
+                <svg class="animate-spin h-10 w-10 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p class="text-white mt-4">Menganalisis gambar...</p>
+            </div>
         </div>
+        
         <div class="flex w-full h-fit gap-2.5">
-            <button class="w-full justify-center px-4 py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-2xl">
+            <label for="file-upload" class="cursor-pointer text-center w-full justify-center px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-2xl">
                 Pilih Berkas
-            </button>
-            <button class="w-full justify-center px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-2xl">
+            </label>
+            <input id="file-upload" type="file" class="hidden" accept="image/*"/>
+            <button id="btnScan" class="w-full justify-center px-4 py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-2xl disabled:bg-gray-200 disabled:text-gray-400" disabled>
                 Scan Gambar
             </button>
         </div>
     </div>
+
     <div class="hidden md:block bg-white p-4 md:row-start-9 md:row-span-7 xl:row-start-9 xl:col-span-6 xl:row-span-4 rounded-2xl shadow-sm md:shadow-xl">
         <div class="w-full h-3.5 flex flex-row items-center justify-between gap-2">
             <h3 class="whitespace-nowrap">wajah terdeteksi</h3>
             <div class="bg-gray-700 h-1 w-full rounded-full"></div>
         </div>
-        <div class="w-full h-full overflow-y-scroll ">
-            <table class="mt-2.5 w-full border-collapse overflow-hidden">
-                <thead>
-                    <tr>
-                        <th class="w-12 p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">No</th>
-                        <th class="w-full p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">Nama</th>
-                        <th class="w-44 p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">Persentase</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td class="p-3 text-left">1</td>
-                        <td class="p-3 text-left">Nama</td>
-                        <td class="p-3 text-center">80%</td>
-                    </tr>
-                    <tr>
-                        <td class="p-3 text-left">2</td>
-                        <td class="p-3 text-left">Nama</td>
-                        <td class="p-3 text-center">78%</td>
-                    </tr>
-                    <tr>
-                        <td class="p-3 text-left">3</td>
-                        <td class="p-3 text-left">Nama</td>
-                        <td class="p-3 text-center">75%</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        <div class="w-full h-full overflow-y-scroll "><table class="mt-2.5 w-full border-collapse overflow-hidden"><thead><tr><th class="w-12 p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">No</th><th class="w-full p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">Nama</th><th class="w-44 p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">Persentase</th></tr></thead><tbody id="listDeteksi"><tr><td class="p-3 text-left" colspan="3"><span class="text-sm text-gray-500">Belum ada wajah terdeteksi…</span></td></tr></tbody></table></div>
     </div>
     <div class="bg-white p-4 xl:col-start-7 md:row-start-9 md:col-start-2 md:row-span-7 xl:row-start-2 xl:col-span-9 xl:row-span-11 rounded-2xl shadow-sm md:shadow-xl flex flex-col">
         <div class="w-full h-3.5 flex flex-row items-center justify-between gap-2">
             <h3 class="whitespace-nowrap" >hasil presensi</h3>
             <div class="bg-gray-700 h-1 w-full rounded-full"></div>
         </div>
-        <div class="flex-1 overflow-y-scroll">
-            <table class="mt-2.5 w-full border-collapse overflow-hidden">
-                <thead>
-                    <tr>
-                        <th class="w-12 p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">No</th>
-                        <th class="w-30 p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">NISN</th>
-                        <th class="p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">Nama</th>
-                        <th class="w-40 p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">Kelas</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td class="p-3 text-left">1</td>
-                        <td class="p-3 text-left">3698521470</td>
-                        <td class="p-3 text-left">adfjk afjkdadfjk</td>
-                        <td class="p-3 text-left">Kelas 8C</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <button class="w-full justify-center px-4 py-2 mt-4 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-2xl">
-            Simpan dan Kirim
-        </button>
+        <div class="flex-1 overflow-y-scroll"><table class="mt-2.5 w-full border-collapse overflow-hidden"><thead><tr><th class="w-12 p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">No</th><th class="w-30 p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">NISN</th><th class="p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">Nama</th><th class="w-40 p-3 text-left border-b-1 border-b-gray-800 font-bold text-black sticky">Kelas</th></tr></thead><tbody id="listPresensi"><tr><td class="p-3 text-left" colspan="4"><span class="text-sm text-gray-500">Belum ada data presensi. Pilih dan scan gambar terlebih dahulu.</span></td></tr></tbody></table></div>
+        <button id="btnSimpanKirim" class="w-full justify-center px-4 py-2 mt-4 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-2xl disabled:bg-gray-200 disabled:text-gray-400" disabled>Simpan dan Kirim</button>
     </div>
 {% endblock presensi %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const fileUpload = document.getElementById('file-upload');
+    const imagePreview = document.getElementById('image-preview');
+    const placeholder = document.getElementById('placeholder');
+    const btnScan = document.getElementById('btnScan');
+    const btnSimpanKirim = document.getElementById('btnSimpanKirim');
+    const loadingIndicator = document.getElementById('loading-indicator');
+    const listDeteksi = document.getElementById('listDeteksi');
+    const listPresensi = document.getElementById('listPresensi');
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    let presensiResults = [];
+    let resizedImageBase64 = ''; // Variabel untuk menyimpan gambar yang sudah di-resize
+
+    fileUpload.addEventListener('change', function (event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const img = new Image();
+            img.onload = function () {
+                const MAX_WIDTH = 800; // Lebar maksimal gambar
+                const scaleSize = MAX_WIDTH / img.width;
+                const canvas = document.createElement('canvas');
+                canvas.width = MAX_WIDTH;
+                canvas.height = img.height * scaleSize;
+
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                // Simpan hasil resize ke variabel
+                resizedImageBase64 = canvas.toDataURL('image/jpeg', 0.9); // Kualitas 90%
+
+                // Tampilkan pratinjau
+                imagePreview.src = resizedImageBase64;
+                imagePreview.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+                btnScan.disabled = false;
+            }
+            img.src = e.target.result;
+        }
+        reader.readAsDataURL(file);
+    });
+
+    btnScan.addEventListener('click', function () {
+        if (!resizedImageBase64) {
+            alert("Silakan pilih gambar terlebih dahulu.");
+            return;
+        }
+        loadingIndicator.style.display = 'flex';
+        btnScan.disabled = true;
+
+        fetch("{% url 'deteksi_frame' %}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({ image: resizedImageBase64 })
+        })
+        .then(response => response.json())
+        .then(data => handleDetectionResults(data.detected || []))
+        .catch(error => {
+            console.error('Error:', error);
+            listDeteksi.innerHTML = '<tr><td class="p-3 text-red-500" colspan="3">Terjadi kesalahan saat deteksi.</td></tr>';
+        })
+        .finally(() => {
+            loadingIndicator.style.display = 'none';
+            btnScan.disabled = false;
+        });
+    });
+    
+    btnSimpanKirim.addEventListener('click', function() {
+        if (presensiResults.length === 0) {
+            alert('Tidak ada data presensi untuk disimpan.');
+            return;
+        }
+        this.disabled = true;
+        this.textContent = 'Menyimpan...';
+
+        fetch("{% url 'deteksi_save' %}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({ detected: presensiResults })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.ok) {
+                const hadirCount = data.hadir_saved || 0;
+                const alphaCount = data.alpha_created || 0;
+                alert(`Tersimpan. Hadir: ${hadirCount}, Alpha dibuat: ${alphaCount}.`);
+                
+                presensiResults = [];
+                updatePresensiTable();
+                listDeteksi.innerHTML = '<tr><td class="p-3 text-left" colspan="3"><span class="text-sm text-gray-500">Pilih gambar baru untuk memulai.</span></td></tr>';
+            } else {
+                alert('Gagal menyimpan data.');
+            }
+        })
+        .catch(error => {
+            console.error('Save Error:', error);
+            alert('Terjadi kesalahan saat menyimpan.');
+        })
+        .finally(() => {
+            this.disabled = false;
+            this.textContent = 'Simpan dan Kirim';
+        });
+    });
+
+    function handleDetectionResults(results) {
+        listDeteksi.innerHTML = '';
+        if (results.length > 0) {
+            results.forEach((result, index) => {
+                const confidence = result.confidence ? parseFloat(result.confidence).toFixed(2) : '0.00';
+                const row = `<tr><td class="p-3 text-left">${index + 1}</td><td class="p-3 text-left">${result.nama || '(Tidak Dikenal)'}</td><td class="p-3 text-center">${confidence}%</td></tr>`;
+                listDeteksi.innerHTML += row;
+            });
+            const nisnsToResolve = results.filter(r => r.nisn).map(r => r.nisn);
+            const uniqueNisns = [...new Set(nisnsToResolve)];
+            if (uniqueNisns.length > 0) {
+                resolveSiswaData(uniqueNisns, results);
+            }
+        } else {
+            listDeteksi.innerHTML = '<tr><td class="p-3" colspan="3"><span class="text-sm text-gray-500">Tidak ada wajah yang dikenali.</span></td></tr>';
+        }
+    }
+    
+    function resolveSiswaData(nisns, originalResults) {
+        fetch("{% url 'deteksi_resolve' %}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({ nisns: nisns })
+        })
+        .then(response => response.json())
+        .then(data => {
+            const siswaDataMap = new Map(data.items.map(item => [item.nisn, item]));
+            const newResults = originalResults.filter(r => r.nisn).map(result => {
+                const siswaData = siswaDataMap.get(result.nisn);
+                return { ...result, nama: siswaData ? siswaData.nama : result.nama, kelas: siswaData ? siswaData.kelas : '-' };
+            });
+            newResults.forEach(res => {
+                if (!presensiResults.some(item => item.nisn === res.nisn)) {
+                    presensiResults.push(res);
+                }
+            });
+            updatePresensiTable();
+        })
+        .catch(error => console.error('Resolve Error:', error));
+    }
+
+    function updatePresensiTable() {
+        listPresensi.innerHTML = '';
+        if (presensiResults.length > 0) {
+            presensiResults.forEach((result, index) => {
+                const row = `<tr><td class="p-3 text-left">${index + 1}</td><td class="p-3 text-left">${result.nisn}</td><td class="p-3 text-left">${result.nama}</td><td class="p-3 text-left">${result.kelas || '-'}</td></tr>`;
+                listPresensi.innerHTML += row;
+            });
+            btnSimpanKirim.disabled = false;
+        } else {
+            listPresensi.innerHTML = '<tr><td class="p-3" colspan="4"><span class="text-sm text-gray-500">Belum ada data presensi.</span></td></tr>';
+            btnSimpanKirim.disabled = true;
+        }
+    }
+});
+</script>
+{% endblock extra_js %}

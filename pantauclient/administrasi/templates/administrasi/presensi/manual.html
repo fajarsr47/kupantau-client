@@ -1,14 +1,228 @@
 {% extends "administrasi/presensi/presensi.html" %}
 {% load static %}
 {% block presensi %}
-    <div class="bg-white p-3 md:col-span-2 xl:col-span-6 xl:row-start-2 xl:row-span-7 rounded-2xl shadow-sm md:shadow-xl flex flex-col gap-2">
-        <div class="w-full h-full bg-amber-300 rounded-2xl flex items-center justify-center">
-            <video id="video" class="w-full h-full rounded-2xl" autoplay></video>
+    <div class="xl:col-start-1 xl:row-start-2 xl:col-span-full xl:row-span-2 h-full flex flex-col items-start justify-center bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-lg mb-6 shadow-xl" role="alert">
+        <p class="font-bold">Mode Cepat!</p>
+        <p>Semua siswa dianggap Hadir. Klik status siswa untuk menandai ketidakhadiran (Sakit, Izin, atau Alpha).</p>
+    </div>
+
+    <div class="xl:col-start-1 xl:row-start-4 xl:col-span-full xl:row-span-9 bg-white rounded-xl shadow-lg overflow-hidden flex flex-col">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div class="flex items-center gap-2 h-8">
+                    <label for="kelas-selector" class="text-gray-600">Kelas:</label>
+                    <select id="kelas-selector" class="block w-full md:w-24 h-full px-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        {% for k in semua_kelas %}
+                            <option value="{{ k.id }}">{{ k.nama_kelas }}</option>
+                        {% empty %}
+                            <option disabled>Belum ada data kelas</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex h-8 items-center space-x-2 bg-gray-100 p-1 rounded-lg">
+                    {% comment %} <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 text-gray-500 ml-2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> {% endcomment %}
+                    <input type="date" id="attendance-date" class="bg-gray-100 border-none focus:ring-0 w-full px-2">
+                </div>
+            </div>
         </div>
-        <div class="flex w-full h-fit">
-            <button class="w-fit px-4 py-2 bg-blue-500 text-white rounded-full">
-                Mulai Presensi
+        <div class="overflow-x-auto flex-grow">
+            <table class="w-full text-sm text-left text-gray-500">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
+                    <tr>
+                        <th scope="col" class="px-6 py-3">Nama Siswa</th>
+                        <th scope="col" class="px-6 py-3 hidden sm:table-cell">NISN</th>
+                        <th scope="col" class="px-6 py-3 text-center">Status Kehadiran</th>
+                    </tr>
+                </thead>
+                <tbody id="student-list">
+                    <tr><td colspan="3" class="text-center p-8 text-gray-500">Memuat data siswa...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="p-6 flex justify-end bg-gray-50">
+            <button id="save-button" class="px-6 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition transform hover:scale-105 disabled:bg-gray-400">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block h-4 w-4 mr-2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                Simpan Perubahan
             </button>
         </div>
     </div>
+
+    <div id="statusModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm hidden transition-opacity duration-300">
+        <div id="modalContent" class="bg-white rounded-lg shadow-xl w-11/12 md:max-w-md mx-auto transition-transform duration-300 transform scale-95">
+            <div class="flex justify-between items-center p-4 border-b">
+                <h3 class="text-lg font-semibold">Ubah Status Kehadiran untuk <br> <span id="modalStudentName" class="font-bold"></span></h3>
+                <button id="closeModal" class="text-gray-400 hover:text-gray-600">&times;</button>
+            </div>
+            <div class="p-6 grid grid-cols-2 gap-4">
+                <button data-status="H" class="modal-btn bg-green-100 text-green-800 hover:bg-green-200 p-4 rounded-lg text-center">Hadir</button>
+                <button data-status="S" class="modal-btn bg-blue-100 text-blue-800 hover:bg-blue-200 p-4 rounded-lg text-center">Sakit</button>
+                <button data-status="I" class="modal-btn bg-yellow-100 text-yellow-800 hover:bg-yellow-200 p-4 rounded-lg text-center">Izin</button>
+                <button data-status="A" class="modal-btn bg-red-100 text-red-800 hover:bg-red-200 p-4 rounded-lg text-center">Alpha</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="toast" class="fixed bottom-5 right-5 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg transition-all duration-300 opacity-0 translate-y-10">
+        Data presensi berhasil disimpan!
+    </div>
 {% endblock presensi %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const studentListBody = document.getElementById('student-list');
+    const kelasSelector = document.getElementById('kelas-selector');
+    const dateInput = document.getElementById('attendance-date');
+    const saveButton = document.getElementById('save-button');
+    const toast = document.getElementById('toast');
+    
+    // Modal elements
+    const statusModal = document.getElementById('statusModal');
+    const modalContent = document.getElementById('modalContent');
+    const modalStudentName = document.getElementById('modalStudentName');
+    const closeModalBtn = document.getElementById('closeModal');
+    let currentStudentId = null;
+
+    let students = []; // Data siswa dari server
+
+    // --- PERBAIKAN DI BAGIAN INI ---
+    // Set tanggal hari ini dengan benar berdasarkan timezone lokal
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0'); // Bulan dimulai dari 0
+    const day = String(today.getDate()).padStart(2, '0');
+    const formattedDate = `${year}-${month}-${day}`;
+    dateInput.value = formattedDate;
+    // --- AKHIR PERBAIKAN ---
+
+    const statusConfig = {
+        H: { text: 'Hadir', badge: 'bg-green-100 text-green-800' },
+        S: { text: 'Sakit', badge: 'bg-blue-100 text-blue-800' },
+        I: { text: 'Izin', badge: 'bg-yellow-100 text-yellow-800' },
+        A: { text: 'Alpha', badge: 'bg-red-100 text-red-800' },
+    };
+
+    function fetchStudents() {
+        const kelasId = kelasSelector.value;
+        const tanggal = dateInput.value;
+
+        if (!kelasId || !tanggal) return;
+        
+        studentListBody.innerHTML = '<tr><td colspan="3" class="text-center p-8 text-gray-500">Memuat data siswa...</td></tr>';
+        saveButton.disabled = true;
+
+        fetch(`{% url 'get_siswa_presensi_manual' %}?kelas_id=${kelasId}&tanggal=${tanggal}`)
+            .then(response => response.json())
+            .then(data => {
+                students = data.siswa;
+                renderStudents();
+            })
+            .catch(error => {
+                console.error("Fetch error:", error);
+                studentListBody.innerHTML = '<tr><td colspan="3" class="text-center p-8 text-red-500">Gagal memuat data siswa.</td></tr>';
+            });
+    }
+
+    function renderStudents() {
+        studentListBody.innerHTML = '';
+        if (students.length === 0) {
+            studentListBody.innerHTML = '<tr><td colspan="3" class="text-center p-8 text-gray-500">Tidak ada siswa di kelas ini.</td></tr>';
+            saveButton.disabled = true;
+            return;
+        }
+        
+        students.forEach(student => {
+            const statusInfo = statusConfig[student.status] || { text: '?', badge: 'bg-gray-100' };
+            const tr = document.createElement('tr');
+            tr.className = 'bg-white border-b hover:bg-gray-50';
+            tr.innerHTML = `
+                <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap flex items-center space-x-3">
+                    {% comment %} <div class="h-10 w-10 rounded-full flex items-center justify-center bg-gray-200 text-gray-600 font-bold">${student.photoInitial}</div> {% endcomment %}
+                    <span>${student.nama}</span>
+                </td>
+                <td class="px-6 py-4 hidden sm:table-cell">${student.nisn}</td>
+                <td class="px-6 py-4 text-center">
+                    <span class="status-badge cursor-pointer px-3 py-1 text-xs font-medium rounded-full ${statusInfo.badge}" data-studentid="${student.id}">${statusInfo.text}</span>
+                </td>
+            `;
+            studentListBody.appendChild(tr);
+        });
+        
+        saveButton.disabled = false;
+    }
+
+    function openModal(studentId) {
+        currentStudentId = studentId;
+        const student = students.find(s => s.id === studentId);
+        modalStudentName.textContent = student.nama;
+        statusModal.classList.remove('hidden');
+    }
+
+    function closeModal() {
+        statusModal.classList.add('hidden');
+    }
+
+    // Event listeners
+    kelasSelector.addEventListener('change', fetchStudents);
+    dateInput.addEventListener('change', fetchStudents);
+    
+    studentListBody.addEventListener('click', e => {
+        if (e.target.classList.contains('status-badge')) {
+            openModal(parseInt(e.target.dataset.studentid));
+        }
+    });
+
+    closeModalBtn.addEventListener('click', closeModal);
+    statusModal.addEventListener('click', e => {
+        if (e.target === statusModal) closeModal();
+        if (e.target.classList.contains('modal-btn')) {
+            const newStatus = e.target.dataset.status;
+            const student = students.find(s => s.id === currentStudentId);
+            student.status = newStatus;
+            renderStudents();
+            closeModal();
+        }
+    });
+
+    saveButton.addEventListener('click', function() {
+        this.disabled = true;
+        this.innerHTML = 'Menyimpan...';
+
+        const dataToSave = {
+            tanggal: dateInput.value,
+            updates: students.map(s => ({ id: s.id, status: s.status }))
+        };
+
+        fetch('{% url "save_presensi_manual" %}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify(dataToSave)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.ok) {
+                toast.textContent = data.message;
+                toast.classList.remove('opacity-0', 'translate-y-10');
+                setTimeout(() => {
+                    toast.classList.add('opacity-0', 'translate-y-10');
+                    fetchStudents(); 
+                }, 2000);
+            } else {
+                alert('Gagal menyimpan: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error("Save error:", error);
+            alert("Terjadi kesalahan saat menyimpan data.");
+        })
+        .finally(() => {
+            this.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block h-4 w-4 mr-2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> Simpan Perubahan`;
+        });
+    });
+
+    // Inisialisasi
+    fetchStudents();
+});
+</script>
+{% endblock extra_js %}

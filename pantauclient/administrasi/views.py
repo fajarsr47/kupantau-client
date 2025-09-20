@@ -9,13 +9,17 @@ from akademik.forms import KelasForm, MapelForm, JamPelajaranForm, JadwalForm, U
 from django.db import transaction
 from django.contrib.auth.hashers import make_password
 from django.contrib import messages
-from django.db.models import Value, CharField
+from django.db.models import Value, CharField, Q, Count, IntegerField, When, Case
+from datetime import timedelta
 from django.db.models.expressions import Case, When
 import csv, io, re
 from django.utils.dateparse import parse_date
 import json
 from django.views.decorators.http import require_POST
 from django.utils import timezone
+from django.forms.models import model_to_dict
+import openpyxl
+from openpyxl.utils import get_column_letter
 
 
 # Create your views here.
@@ -28,7 +32,9 @@ def index(request):
     return render(request, 'administrasi/index.html', context)
 
 def rekap(request):
+    kelas = Kelas.objects.all()
     context = {
+        'semua_kelas': kelas,
         'title': 'Rekap',
     }
     return render(request, 'administrasi/rekap.html', context)
@@ -308,7 +314,11 @@ def get_siswa(request):
     q = request.GET.get('q', '').strip()
     kelas_id = request.GET.get('kelas_id')
 
+    # --- PERBAIKAN DI SINI ---
+    # Gunakan select_related untuk mengambil data kelas dalam satu query
     siswa_qs = Siswa.objects.select_related('kelas').all().order_by('nama')
+    # -------------------------
+
     if kelas_id:
         try:
             siswa_qs = siswa_qs.filter(kelas_id=int(kelas_id))
@@ -328,7 +338,7 @@ def get_siswa(request):
         'nama': s.nama,
         'nisn': s.nisn,
         'nipd': s.nipd or '',
-        'kelas': s.kelas.nama_kelas,
+        'kelas': s.kelas.nama_kelas, # Baris ini sekarang tidak memicu query baru
         'wali': wali_of(s),
         'no_siswa': s.no_siswa or '',
         'no_ortu': s.no_ortu or '',
@@ -510,12 +520,6 @@ def deteksi(request):
     }
     return render(request, 'administrasi/presensi/deteksi.html', context)
 
-def manual(request):
-    context = {
-        'title': 'Presensi Manual',
-    }
-    return render(request, 'administrasi/presensi/manual.html', context)
-
 def import_gambar(request):
     context = {
         'title': 'Presensi Scan Gambar',
@@ -660,3 +664,237 @@ def deteksi_resolve(request):
         if z not in known:
             items.append({'nisn': z, 'nama': '(tidak dikenal)', 'kelas': '-'})
     return JsonResponse({'items': items})
+
+
+
+# Tambahkan view ini di bawah view import_gambar
+def manual(request):
+    semua_kelas = Kelas.objects.all().order_by('nama_kelas')
+    context = {
+        'title': 'Presensi Manual',
+        'semua_kelas': semua_kelas,
+    }
+    return render(request, 'administrasi/presensi/manual.html', context)
+
+def get_siswa_presensi_manual(request):
+    """
+    Endpoint untuk mengambil daftar siswa per kelas beserta status presensi
+    pada tanggal tertentu.
+    """
+    kelas_id = request.GET.get('kelas_id')
+    tanggal_str = request.GET.get('tanggal')
+    
+    if not kelas_id or not tanggal_str:
+        return JsonResponse({'error': 'Parameter kelas_id dan tanggal dibutuhkan'}, status=400)
+
+    try:
+        tanggal = timezone.datetime.strptime(tanggal_str, '%Y-%m-%d').date()
+    except ValueError:
+        return JsonResponse({'error': 'Format tanggal tidak valid'}, status=400)
+
+    from akademik.models import PresensiSekolah, PresensiStatus
+    
+    # Ambil semua siswa di kelas tersebut
+    list_siswa = Siswa.objects.filter(kelas_id=kelas_id).order_by('nama')
+    
+    # Ambil data presensi yang sudah ada untuk siswa-siswa tersebut pada tanggal itu
+    presensi_exist = PresensiSekolah.objects.filter(
+        siswa__in=list_siswa,
+        tanggal=tanggal
+    ).select_related('siswa')
+    
+    status_map = {p.siswa.id: p.status for p in presensi_exist}
+    
+    data_siswa = []
+    for s in list_siswa:
+        inisial = "".join(part[0] for part in s.nama.split()[:2]).upper()
+        data_siswa.append({
+            'id': s.id,
+            'nama': s.nama,
+            'nisn': s.nisn,
+            'status': status_map.get(s.id, PresensiStatus.H), # Default Hadir (H)
+            'photoInitial': inisial,
+        })
+
+    return JsonResponse({'siswa': data_siswa})
+
+@require_POST
+@transaction.atomic
+def save_presensi_manual(request):
+    """
+    Endpoint untuk menyimpan data presensi manual.
+    """
+    try:
+        data = json.loads(request.body)
+        tanggal_str = data.get('tanggal')
+        updates = data.get('updates') # List of {'id': siswa_id, 'status': 'H/S/I/A'}
+        
+        if not tanggal_str or not updates:
+            return JsonResponse({'error': 'Data tidak lengkap'}, status=400)
+
+        tanggal = timezone.datetime.strptime(tanggal_str, '%Y-%m-%d').date()
+        from akademik.models import PresensiSekolah
+        
+        saved_count = 0
+        for item in updates:
+            siswa_id = item.get('id')
+            status = item.get('status')
+            
+            # Dapatkan objek siswa
+            siswa_obj = get_object_or_404(Siswa, id=siswa_id)
+            
+            # Waktu default (awal hari) untuk status selain Hadir
+            waktu = timezone.make_aware(timezone.datetime.combine(tanggal, timezone.datetime.min.time()))
+
+            # Gunakan update_or_create untuk membuat atau memperbarui record
+            obj, created = PresensiSekolah.objects.update_or_create(
+                siswa=siswa_obj,
+                tanggal=tanggal,
+                defaults={'status': status, 'waktu': waktu}
+            )
+            saved_count += 1
+            
+        return JsonResponse({'ok': True, 'message': f'{saved_count} data presensi berhasil disimpan.'})
+
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+
+
+# GANTI FUNGSI LAMA DENGAN YANG INI
+def get_rekap_data(request):
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+    
+    # Ambil filter dari frontend
+    scope = request.GET.get('scope') # 'semua', 'tingkatan', 'kelas'
+    scope_value = request.GET.get('scope_value') # ID tingkatan atau ID kelas
+
+    if not start_date_str or not end_date_str:
+        return JsonResponse({'error': 'Rentang tanggal harus diisi'}, status=400)
+
+    from akademik.models import PresensiSekolah, Siswa, Kelas
+    
+    # Ambil semua siswa yang relevan berdasarkan filter
+    siswa_qs = Siswa.objects.select_related('kelas').all()
+    if scope == 'tingkatan' and scope_value:
+        # Asumsi nama kelas mengandung tingkatan (misal: "Kelas 7A", "Kelas 8B")
+        siswa_qs = siswa_qs.filter(kelas__nama_kelas__startswith=f'Kelas {scope_value}')
+    elif scope == 'kelas' and scope_value:
+        siswa_qs = siswa_qs.filter(kelas_id=scope_value)
+
+    # Ambil semua data presensi dalam rentang tanggal untuk siswa yang relevan
+    presensi_data = PresensiSekolah.objects.filter(
+        tanggal__range=[start_date_str, end_date_str],
+        siswa__in=siswa_qs
+    )
+
+    # Lakukan agregasi di Python untuk fleksibilitas
+    rekap_per_siswa = {}
+    
+    # Inisialisasi setiap siswa
+    for siswa in siswa_qs:
+        rekap_per_siswa[siswa.id] = {
+            'id': siswa.id,
+            'nisn': siswa.nisn,
+            'nama': siswa.nama,
+            'kelas': siswa.kelas.nama_kelas,
+            'hadir': 0,
+            'tidak_hadir': 0,
+            'total_hari': 0
+        }
+
+    # Proses data presensi
+    for presensi in presensi_data:
+        if presensi.siswa_id in rekap_per_siswa:
+            siswa_rekap = rekap_per_siswa[presensi.siswa_id]
+            siswa_rekap['total_hari'] += 1
+            if presensi.status == 'H':
+                siswa_rekap['hadir'] += 1
+            else: # S, I, A
+                siswa_rekap['tidak_hadir'] += 1
+    
+    # Ubah format ke list dan hitung persentase
+    hasil_akhir = []
+    for siswa_id, data in rekap_per_siswa.items():
+        if data['total_hari'] > 0:
+            persentase = (data['hadir'] / data['total_hari']) * 100
+            data['persentase'] = round(persentase)
+        else:
+            data['persentase'] = 0 # Jika tidak ada data sama sekali
+        
+        # Ganti nama field agar cocok dengan frontend
+        data['hari_efektif'] = data.pop('total_hari')
+        
+        hasil_akhir.append(data)
+        
+    return JsonResponse({ 'rekap': sorted(hasil_akhir, key=lambda x: (x['kelas'], x['nama'])) })
+
+def export_rekap_excel(request):
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+    scope = request.GET.get('scope')
+    scope_value = request.GET.get('scope_value')
+
+    if not start_date_str or not end_date_str:
+        return HttpResponse("Rentang tanggal harus diisi", status=400)
+
+    from akademik.models import PresensiSekolah, Siswa
+    
+    siswa_qs = Siswa.objects.select_related('kelas').all()
+    if scope == 'tingkatan' and scope_value:
+        siswa_qs = siswa_qs.filter(kelas__nama_kelas__icontains=scope_value)
+    elif scope == 'kelas' and scope_value:
+        siswa_qs = siswa_qs.filter(kelas_id=scope_value)
+
+    start_date = timezone.datetime.strptime(start_date_str, '%Y-%m-%d').date()
+    end_date = timezone.datetime.strptime(end_date_str, '%Y-%m-%d').date()
+    total_hari_efektif = (end_date - start_date).days + 1
+
+    presensi_data = PresensiSekolah.objects.filter(
+        tanggal__range=[start_date, end_date],
+        siswa__in=siswa_qs
+    ).values('siswa_id').annotate(hadir_count=Count('pk', filter=Q(status='H')))
+    
+    counts_map = {item['siswa_id']: item['hadir_count'] for item in presensi_data}
+
+    # Buat file Excel di memori
+    workbook = openpyxl.Workbook()
+    sheet = workbook.active
+    sheet.title = 'Rekap Kehadiran'
+
+    # Buat Header
+    headers = ["No", "NISN", "Nama Siswa", "Kelas", "Hari Efektif", "Hadir", "Tidak Hadir", "Persentase (%)"]
+    sheet.append(headers)
+
+    # Isi data
+    row_num = 1
+    for siswa in sorted(list(siswa_qs), key=lambda s: (s.kelas.nama_kelas if s.kelas else '', s.nama)):
+        row_num += 1
+        hadir = counts_map.get(siswa.id, 0)
+        tidak_hadir = total_hari_efektif - hadir
+        persentase = (hadir / total_hari_efektif * 100) if total_hari_efektif > 0 else 0
+        
+        row_data = [
+            row_num - 1,
+            siswa.nisn,
+            siswa.nama,
+            siswa.kelas.nama_kelas if siswa.kelas else '-',
+            total_hari_efektif,
+            hadir,
+            tidak_hadir,
+            round(persentase)
+        ]
+        sheet.append(row_data)
+
+    # Atur lebar kolom otomatis
+    for col_idx, header in enumerate(headers, 1):
+        column_letter = get_column_letter(col_idx)
+        sheet.column_dimensions[column_letter].best_fit = True
+
+    # Siapkan respons untuk mengunduh file
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="rekap_kehadiran_{start_date_str}_sd_{end_date_str}.xlsx"'
+    workbook.save(response)
+    
+    return response
