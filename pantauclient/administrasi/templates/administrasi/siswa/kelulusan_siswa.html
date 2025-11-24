@@ -1,0 +1,94 @@
+{% extends 'administrasi/base.html' %}
+{% load static %}
+
+{% block isi %}
+<div class="flex flex-col gap-4">
+    <div class="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+        <div>
+            <h1 class="text-xl font-bold text-red-600 flex items-center gap-2">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                Kelulusan Tingkat Akhir (Otomatis)
+            </h1>
+            <p class="text-sm text-gray-500">
+                Sistem mendeteksi tingkat tertinggi adalah <b>Tingkat {{ tingkat }}</b> ({{ daftar_kelas_akhir }}).
+            </p>
+        </div>
+        <a href="{% url 'siswa' %}" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition text-sm font-medium flex items-center gap-2">
+            Kembali
+        </a>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-md p-6 border border-gray-100">
+        <form method="POST" action="">
+            {% csrf_token %}
+            
+            <div class="sticky top-0 z-20 bg-white pb-4 border-b border-gray-200 mb-4 flex justify-between items-center">
+                <div class="text-sm text-gray-600 max-w-lg">
+                    <span class="text-red-600 font-bold">PERHATIAN:</span> Siswa yang <b class="text-gray-800">tidak dicentang</b> akan <b class="text-red-600">DIHAPUS PERMANEN</b> (Lulus). 
+                    Centang untuk <b class="text-blue-600">MENAHAN</b> siswa.
+                </div>
+                <button type="submit" onclick="return confirm('PERINGATAN FINAL: Data siswa yang TIDAK dicentang akan DIHAPUS PERMANEN dari database. Apakah Anda yakin?')" 
+                    class="px-6 py-2.5 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 focus:ring-4 focus:ring-red-300 transition shadow-lg flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    Proses Kelulusan
+                </button>
+            </div>
+
+            <div class="relative overflow-x-auto border border-gray-200 rounded-lg max-h-[600px]">
+                <table class="w-full text-sm text-left text-gray-500">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-100 border-b sticky top-0 z-10">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 w-16 text-center">
+                                <div class="flex flex-col items-center">
+                                    <span class="mb-1 text-[10px] leading-tight normal-case text-blue-600 font-bold">Tahan Semua</span>
+                                    <input type="checkbox" id="checkAll" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer">
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-3">Kelas</th>
+                            <th scope="col" class="px-6 py-3">NISN</th>
+                            <th scope="col" class="px-6 py-3">Nama Siswa</th>
+                            <th scope="col" class="px-6 py-3 text-center">Status Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for siswa in siswa_akhir %}
+                        <tr class="bg-white border-b hover:bg-gray-50 transition group">
+                            <td class="px-6 py-3 text-center">
+                                <input type="checkbox" name="siswa_tahan" value="{{ siswa.id }}" 
+                                    class="siswa-checkbox w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer peer transition-all">
+                            </td>
+                            <td class="px-6 py-3 font-bold text-gray-700 bg-gray-50">{{ siswa.kelas.nama_kelas }}</td>
+                            <td class="px-6 py-3">{{ siswa.nisn|default:"-" }}</td>
+                            <td class="px-6 py-3 font-medium text-gray-900">{{ siswa.nama }}</td>
+                            <td class="px-6 py-3 text-center">
+                                <span class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold peer-checked:hidden transition-all">
+                                    Akan Dihapus
+                                </span>
+                                <span class="hidden px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold peer-checked:inline-block transition-all shadow-sm border border-blue-200">
+                                    Ditahan (Tetap)
+                                </span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="px-6 py-12 text-center text-gray-500 italic flex flex-col items-center justify-center">
+                                <svg class="w-12 h-12 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                                Tidak ada siswa di tingkat akhir (Tingkat {{ tingkat }}).
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Script untuk Check All
+    document.getElementById('checkAll').addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.siswa-checkbox');
+        checkboxes.forEach(cb => cb.checked = this.checked);
+    });
+</script>
+{% endblock isi %}

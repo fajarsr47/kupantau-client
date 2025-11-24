@@ -42,6 +42,11 @@ urlpatterns = [
     path('get_siswa/', views.get_siswa, name='get_siswa'),
     path('siswa/import/', views.siswa_import, name='siswa_import'),
 
+    # Tambahkan di urlpatterns
+    path('siswa/kenaikan-kelas/', views.kenaikan_kelas, name='kenaikan_kelas'),
+    path('siswa/api/get-siswa-by-kelas/', views.get_siswa_by_kelas, name='get_siswa_by_kelas'),
+    path('siswa/kelulusan/', views.kelulusan_siswa, name='kelulusan_siswa'),
+
     # =========================
     #   Guru
     # =========================

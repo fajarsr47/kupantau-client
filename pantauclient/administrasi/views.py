@@ -898,3 +898,168 @@ def export_rekap_excel(request):
     workbook.save(response)
     
     return response
+
+
+def get_siswa_by_kelas(request):
+    kelas_id = request.GET.get('kelas_id')
+    # PERBAIKAN: Menggunakan 'nisn' sesuai field di database kamu
+    siswas = Siswa.objects.filter(kelas_id=kelas_id).values('id', 'nama', 'nisn') 
+    return JsonResponse(list(siswas), safe=False)
+
+@transaction.atomic
+def kenaikan_kelas(request):
+    # 1. Ambil semua kelas dan siapkan Lookup
+    all_kelas = list(Kelas.objects.all().order_by('nama_kelas'))
+    kelas_lookup = {} # Key: (level, suffix), Value: Kelas Object
+    
+    max_level = -1
+    for k in all_kelas:
+        match = re.match(r'^(\d+)(.*)', k.nama_kelas)
+        if match:
+            val = int(match.group(1))
+            suffix = match.group(2).strip()
+            if val > max_level: max_level = val
+            kelas_lookup[(val, suffix)] = k
+
+    # 2. Logic POST (Proses Simpan)
+    if request.method == 'POST':
+        # Ambil ID siswa yang dicentang (Artinya: TINGGAL KELAS)
+        ids_tinggal = request.POST.getlist('siswa_tinggal')
+        
+        count_sukses = 0
+        
+        # Ambil semua siswa untuk dicek kelayakannya naik
+        # (Kita perlu hitung ulang targetnya di sini karena form tidak mengirim target kelas)
+        semua_siswa = Siswa.objects.select_related('kelas').all()
+        
+        for siswa in semua_siswa:
+            # Jika siswa dicentang (ada di list tinggal), SKIP (jangan ubah kelasnya)
+            if str(siswa.id) in ids_tinggal:
+                continue
+            
+            if not siswa.kelas: continue
+            
+            # Cek apakah valid untuk naik kelas
+            match = re.match(r'^(\d+)(.*)', siswa.kelas.nama_kelas)
+            if match:
+                level_asal = int(match.group(1))
+                suffix_asal = match.group(2).strip()
+                
+                # Jangan proses jika sudah tingkat akhir (harusnya lewat menu kelulusan)
+                if level_asal >= max_level:
+                    continue
+                
+                # Cari kelas tujuan (Level + 1)
+                target_kelas = kelas_lookup.get((level_asal + 1, suffix_asal))
+                
+                if target_kelas:
+                    # EKSEKUSI PINDAH KELAS
+                    siswa.kelas = target_kelas
+                    siswa.save()
+                    count_sukses += 1
+        
+        messages.success(request, f'Sukses! {count_sukses} siswa berhasil dinaikkan kelasnya.')
+        return redirect('kenaikan_kelas')
+
+    # 3. Logic GET (Tampilan)
+    daftar_promosi = [] 
+    siswa_qs = Siswa.objects.select_related('kelas').all().order_by('kelas__nama_kelas', 'nama')
+    
+    for siswa in siswa_qs:
+        if not siswa.kelas: continue
+            
+        k_asal = siswa.kelas
+        match = re.match(r'^(\d+)(.*)', k_asal.nama_kelas)
+        
+        status_teks = ""
+        target_nama = "-"
+        css_class = ""
+        can_promote = False
+        is_tingkat_akhir = False
+        
+        if match:
+            level_asal = int(match.group(1))
+            suffix_asal = match.group(2).strip()
+            
+            if level_asal == max_level:
+                status_teks = f"Tingkat Akhir (Kls {level_asal})"
+                css_class = "text-orange-500 font-bold"
+                is_tingkat_akhir = True
+            else:
+                target_kelas = kelas_lookup.get((level_asal + 1, suffix_asal))
+                if target_kelas:
+                    target_nama = target_kelas.nama_kelas
+                    can_promote = True
+                else:
+                    status_teks = f"Error: Kls {level_asal+1}{suffix_asal} tdk ada"
+                    css_class = "text-red-500 font-bold"
+        else:
+            status_teks = "Format Nama Kelas Invalid"
+            css_class = "text-red-500"
+
+        daftar_promosi.append({
+            'siswa': siswa,
+            'status_teks': status_teks,
+            'target_nama': target_nama,
+            'css': css_class,
+            'can_promote': can_promote,
+            'is_tingkat_akhir': is_tingkat_akhir
+        })
+
+    return render(request, 'administrasi/siswa/kenaikan_kelas.html', {
+        'daftar_promosi': daftar_promosi,
+        'max_level': max_level
+    })
+
+@transaction.atomic
+def kelulusan_siswa(request):
+    # 1. Ambil semua kelas
+    all_kelas = Kelas.objects.all()
+    
+    # 2. Logika mencari Tingkat Tertinggi (Angka terbesar di depan nama kelas)
+    max_level = -1
+    
+    # Regex: ^(\d+) artinya cari angka di awal string
+    for k in all_kelas:
+        match = re.search(r'^(\d+)', k.nama_kelas)
+        if match:
+            val = int(match.group(1))
+            if val > max_level:
+                max_level = val
+    
+    # 3. Filter kelas yang angkanya sama dengan max_level
+    kelas_akhir_ids = []
+    nama_kelas_akhir = []
+    
+    if max_level != -1:
+        for k in all_kelas:
+            match = re.search(r'^(\d+)', k.nama_kelas)
+            if match and int(match.group(1)) == max_level:
+                kelas_akhir_ids.append(k.id)
+                nama_kelas_akhir.append(k.nama_kelas)
+    
+    # 4. Ambil siswa hanya dari kelas tingkat akhir tersebut
+    # Urutkan per kelas biar rapi
+    siswa_akhir = Siswa.objects.filter(kelas_id__in=kelas_akhir_ids).select_related('kelas').order_by('kelas__nama_kelas', 'nama')
+
+    if request.method == 'POST':
+        # Siswa yang dicentang adalah yang DITAHAN (TIDAK LULUS)
+        siswa_tahan_ids = request.POST.getlist('siswa_tahan')
+        
+        # Siswa yang akan dihapus adalah: Siswa di tingkat akhir KECUALI yang ditahan
+        siswa_hapus = siswa_akhir.exclude(id__in=siswa_tahan_ids)
+        
+        jumlah_lulus = siswa_hapus.count()
+        jumlah_tahan = len(siswa_tahan_ids)
+        
+        # Eksekusi Hapus
+        siswa_hapus.delete()
+        
+        messages.success(request, f'Proses Selesai! {jumlah_lulus} siswa tingkat akhir telah diluluskan (dihapus), {jumlah_tahan} siswa ditahan.')
+        return redirect('siswa')
+
+    return render(request, 'administrasi/siswa/kelulusan_siswa.html', {
+        'siswa_akhir': siswa_akhir,
+        'tingkat': max_level if max_level != -1 else "Tidak Terdeteksi",
+        'daftar_kelas_akhir': ", ".join(nama_kelas_akhir)
+    })

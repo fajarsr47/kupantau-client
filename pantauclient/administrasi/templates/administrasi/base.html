@@ -63,7 +63,7 @@
                         {% endif %}" alt="res">
                     <p class="ms-2">REKAP</p>
                 </a>
-                <a class="flex flex-row w-[200px] px-1 justify-start items-center h-fit rounded-xl transition-all duration-200
+                <div class="flex flex-row w-[200px] px-1 justify-start items-center h-fit rounded-xl transition-all duration-200 
                     {% if url_name == 'pengaturan' %}
                         text-white bg-[#84A7FF]
                     {% else %}
@@ -74,9 +74,9 @@
                             {% static 'icon/pengaturan-on.svg' %}
                         {% else %}
                             {% static 'icon/pengaturan-off.svg' %}
-                        {% endif %}" alt="set">
+                        {% endif %}" alt="set" disabled>
                     <p class="ms-2">PENGATURAN</p>
-                </a>
+                </div>
 
 
                 {% comment %} Manejemen {% endcomment %}
