@@ -46,8 +46,8 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NISN / NIPD</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kelas</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Wali</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No Siswa</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No Ortu</th>
+                        {% comment %} <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No Siswa</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No Ortu</th> {% endcomment %}
                     </tr>
                 </thead>
                 <tbody id="tbody" class="bg-white divide-y divide-gray-200">
@@ -80,8 +80,7 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${it.nisn} ${it.nipd?('/ '+it.nipd):''}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${it.kelas}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${it.wali || ''}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${it.no_siswa || ''}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${it.no_ortu || ''}</td>
+                        
                     </tr>
                 `).join('');
                 if (!items.length) {

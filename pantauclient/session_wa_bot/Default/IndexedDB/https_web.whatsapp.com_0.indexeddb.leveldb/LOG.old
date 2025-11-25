@@ -1,0 +1,13 @@
+2025/11/25-18:40:33.267 535c Reusing MANIFEST G:\Web\KuPantau\Kupantau_Client\pantauclient\session_wa_bot\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2025/11/25-18:40:33.267 535c Recovering log #91
+2025/11/25-18:40:33.276 535c Reusing old log G:\Web\KuPantau\Kupantau_Client\pantauclient\session_wa_bot\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/000091.log 
+2025/11/25-18:40:34.408 535c Level-0 table #96: started
+2025/11/25-18:40:34.415 535c Level-0 table #96: 289974 bytes OK
+2025/11/25-18:40:34.417 535c Delete type=0 #91
+2025/11/25-18:40:34.418 535c Manual compaction at level-0 from '\x00(\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00)\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/11/25-18:40:35.677 557c Compacting 1@1 + 1@2 files
+2025/11/25-18:40:35.729 557c Generated table #97@1: 43162 keys, 1791406 bytes
+2025/11/25-18:40:35.729 557c Compacted 1@1 + 1@2 files => 1791406 bytes
+2025/11/25-18:40:35.730 557c compacted to: files[ 0 0 1 0 0 0 0 ]
+2025/11/25-18:40:35.731 557c Delete type=2 #93
+2025/11/25-18:40:35.731 557c Delete type=2 #96
