@@ -2,19 +2,49 @@ import os
 import time
 import subprocess
 import openpyxl
+import threading
+import queue
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from django.conf import settings
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
+# --- PERBAIKAN: Menambahkan import By di sini ---
+from selenium.webdriver.common.by import By 
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 from akademik.models import PresensiSekolah, Kelas
 
-# --- FUNGSI 1: GENERATE EXCEL (TIDAK BERUBAH) ---
+# ==========================================
+# BAGIAN 1: KONFIGURASI ANTREAN (QUEUE)
+# ==========================================
+wa_task_queue = queue.Queue()
+
+def worker():
+    print("🤖 [SYSTEM] WA Bot Worker Berjalan... Menunggu tugas.")
+    while True:
+        item = wa_task_queue.get()
+        if item is None:
+            break
+        
+        try:
+            file_path, nama_grup, caption = item
+            print(f"\n🤖 [WORKER] Memproses antrean: Kirim ke '{nama_grup}'")
+            kirim_laporan_wa_otomatis(file_path, nama_grup, caption)
+        except Exception as e:
+            print(f"❌ [WORKER] Error processing task: {e}")
+        finally:
+            wa_task_queue.task_done()
+            print(f"✅ [WORKER] Tugas selesai. Sisa antrean: {wa_task_queue.qsize()}")
+
+threading.Thread(target=worker, daemon=True).start()
+
+
+# ==========================================
+# BAGIAN 2: GENERATOR EXCEL
+# ==========================================
 def generate_laporan_excel(kelas_id, tanggal):
     try:
         kelas = Kelas.objects.get(id=kelas_id)
@@ -23,13 +53,19 @@ def generate_laporan_excel(kelas_id, tanggal):
             tanggal=tanggal
         ).select_related('siswa').order_by('siswa__nama')
 
+        if not presensi_list.exists():
+            return None, None, None, None
+
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = f"Presensi {kelas.nama_kelas}"
 
         header_font = Font(bold=True, color="FFFFFF")
         header_fill = PatternFill("solid", fgColor="4F46E5")
-        border_style = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+        border_style = Border(
+            left=Side(style='thin'), right=Side(style='thin'), 
+            top=Side(style='thin'), bottom=Side(style='thin')
+        )
 
         headers = ["No", "NISN", "Nama Siswa", "Status", "Waktu Input"]
         ws.append(headers)
@@ -60,32 +96,39 @@ def generate_laporan_excel(kelas_id, tanggal):
         ws.append([f"Sakit: {stats['S']}"])
         ws.append([f"Alpha: {stats['A']}"])
 
-        nama_file = f"Laporan_{kelas.nama_kelas.replace(' ', '_')}_{tanggal}.xlsx"
-        full_path = os.path.join(settings.BASE_DIR, 'media', 'temp_reports')
-        os.makedirs(full_path, exist_ok=True)
+        tgl_str = tanggal.strftime("%Y-%m-%d")
+        nama_file = f"Laporan_{kelas.nama_kelas.replace(' ', '_')}_{tgl_str}.xlsx"
         
-        file_path = os.path.join(full_path, nama_file)
+        save_dir = os.path.join(settings.BASE_DIR, 'media', 'temp_reports')
+        os.makedirs(save_dir, exist_ok=True)
+        
+        file_path = os.path.join(save_dir, nama_file)
         wb.save(file_path)
         
-        # Kembalikan path absolute agar PowerShell bisa membacanya
         return os.path.abspath(file_path), stats, kelas.nama_grup_wa, kelas.nama_kelas
 
     except Exception as e:
-        print(f"Error Excel: {e}")
+        print(f"❌ Error Excel: {e}")
         return None, None, None, None
 
-# --- FUNGSI HELPER: COPY FILE (POWERSHELL) ---
+
+# ==========================================
+# BAGIAN 3: HELPER COPY (PowerShell)
+# ==========================================
 def copy_file_to_clipboard(filepath):
-    print(f"📋 Menyalin file ke clipboard: {filepath}")
-    # Perintah PowerShell untuk set file object ke clipboard
+    print(f"📋 [CLIPBOARD] Menyalin file: {filepath}")
     cmd = f'Set-Clipboard -Path "{filepath}"'
     subprocess.run(["powershell", "-Command", cmd], shell=True)
 
-# --- FUNGSI 2: KIRIM WA (METODE PASTE) ---
+
+# ==========================================
+# BAGIAN 4: SELENIUM BOT (Metode Paste)
+# ==========================================
 def kirim_laporan_wa_otomatis(file_path, nama_grup, caption):
-    print("⚙️  Menyiapkan Browser Selenium (Metode Paste)...")
+    print("⚙️  [SELENIUM] Menyiapkan Browser...")
     
     bot_profile_path = os.path.join(settings.BASE_DIR, "session_wa_bot")
+    
     options = Options()
     options.add_argument(f"user-data-dir={bot_profile_path}")
     options.add_argument("--remote-debugging-port=9222")
@@ -98,15 +141,14 @@ def kirim_laporan_wa_otomatis(file_path, nama_grup, caption):
         driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
         driver.get("https://web.whatsapp.com")
         
-        wait = WebDriverWait(driver, 120) # Tunggu agak lama untuk login
+        wait = WebDriverWait(driver, 120)
         
-        # 1. Login Check
-        print("⏳ Menunggu Login WA Web...")
+        print("⏳ [SELENIUM] Menunggu Login WA Web...")
+        # Perhatikan penggunaan By.XPATH di sini
         wait.until(EC.presence_of_element_located((By.XPATH, '//div[@id="side"]')))
-        print("✅ Login Terdeteksi.")
+        print("✅ [SELENIUM] Login Terdeteksi.")
 
-        # 2. Cari Grup (Sesuai kode user yang berhasil)
-        print(f"🔎 Mencari grup: {nama_grup}")
+        print(f"🔎 [SELENIUM] Mencari grup: {nama_grup}")
         try:
             search_box = wait.until(EC.element_to_be_clickable((By.XPATH, '//div[@contenteditable="true"][@data-tab="3"]')))
             search_box.clear()
@@ -114,36 +156,29 @@ def kirim_laporan_wa_otomatis(file_path, nama_grup, caption):
             time.sleep(0.5)
             
             search_box.send_keys(nama_grup)
-            time.sleep(2) # Tunggu hasil search muncul
+            time.sleep(2.5)
             search_box.send_keys(Keys.ENTER)
         except Exception as e:
-            print(f"❌ Gagal mencari grup: {e}")
+            print(f"❌ [SELENIUM] Gagal mencari grup: {e}")
             return False
 
-        # 3. Tunggu Chat Terbuka
         print("   -> Menunggu chat terbuka...")
-        # Mencari kolom ketik pesan (data-tab=10)
         chat_box = wait.until(EC.presence_of_element_located((By.XPATH, '//div[@contenteditable="true"][@data-tab="10"]')))
         time.sleep(1)
 
-        # 4. Copy File & Paste (CTRL + V)
         if os.path.exists(file_path):
             copy_file_to_clipboard(file_path)
-            time.sleep(1) # Tunggu clipboard system update
+            time.sleep(1.5)
             
-            print("📋 Menempelkan file (CTRL+V)...")
+            print("📋 [SELENIUM] Menempelkan file (CTRL+V)...")
             chat_box.send_keys(Keys.CONTROL, 'v')
         else:
-            print(f"❌ File tidak ditemukan: {file_path}")
+            print(f"❌ [SELENIUM] File tidak ditemukan: {file_path}")
             return False
 
-        # 5. Tunggu Preview File Muncul
         print("   -> Menunggu preview file...")
-        # Tunggu sampai muncul dialog caption (biasanya ada gambar/preview file)
-        # Kita bisa tunggu elemen yang spesifik untuk preview media
         time.sleep(3) 
         
-        # 6. Ketik Caption
         if caption:
             print("   -> Mengetik caption...")
             action = webdriver.ActionChains(driver)
@@ -153,19 +188,46 @@ def kirim_laporan_wa_otomatis(file_path, nama_grup, caption):
             action.perform()
             time.sleep(1)
 
-        # 7. Kirim (ENTER)
-        print("🚀 Mengirim...")
+        print("🚀 [SELENIUM] Mengirim...")
         webdriver.ActionChains(driver).send_keys(Keys.ENTER).perform()
         
-        print(f"✅ Laporan BERHASIL terkirim ke {nama_grup}")
-        time.sleep(5) # Tunggu proses upload selesai sebelum browser ditutup
+        print(f"✅ [SELENIUM] SUKSES kirim ke {nama_grup}")
+        time.sleep(5)
         
         return True
 
     except Exception as e:
-        print(f"❌ Error Selenium: {e}")
+        print(f"❌ [SELENIUM] Error: {e}")
         return False
     finally:
         if driver:
-            print("🏁 Menutup browser...")
+            print("🏁 [SELENIUM] Menutup browser.")
             driver.quit()
+
+
+# ==========================================
+# BAGIAN 5: FUNGSI PEMICU (INTERFACE)
+# ==========================================
+def proses_laporan_wa(kelas_id, tanggal, mode="MANUAL"):
+    path, stats, grup_wa, nama_kelas = generate_laporan_excel(kelas_id, tanggal)
+    
+    if path and grup_wa:
+        tgl_indo = tanggal.strftime("%d-%m-%Y")
+        judul = "LAPORAN PRESENSI HARIAN" if mode == "MANUAL" else "LAPORAN OTOMATIS (SCAN)"
+        
+        caption = (
+            f"*{judul}*\n"
+            f"Kelas: {nama_kelas}\n"
+            f"Tanggal: {tgl_indo}\n\n"
+            f"✅ Hadir: {stats['H']}\n"
+            f"ℹ️ Izin: {stats['I']}\n"
+            f"🏥 Sakit: {stats['S']}\n"
+            f"❌ Alpha: {stats['A']}\n\n"
+            f"_Laporan generated by KuPantau_"
+        )
+        
+        wa_task_queue.put((path, grup_wa, caption))
+        print(f"📥 [QUEUE] Laporan {nama_kelas} ditambahkan ke antrean.")
+        return True
+    
+    return False

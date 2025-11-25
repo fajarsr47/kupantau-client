@@ -4,3 +4,4 @@
 *.cpython-39.pyc
 __init__.py
 ngrok.exe
+media/
