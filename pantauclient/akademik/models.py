@@ -94,7 +94,7 @@ class GuruMapel(models.Model):
 
 class Kelas(models.Model):
     nama_kelas = models.CharField(max_length=100,unique=True)
-    nama_grup_wa = models.CharField(max_length=255, blank=True, null=True, help_text="Nama Grup WA harus persis (Case Sensitive)")
+    nama_grup_wa = models.CharField(max_length=255, blank=True, null=True,)
     guru = models.OneToOneField(UserGuru, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):

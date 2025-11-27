@@ -8,10 +8,11 @@ from .models import Kelas, Mapel, JamPelajaran, Jadwal, UserGuru, GuruMapel, Pro
 class KelasForm(forms.ModelForm):
     class Meta:
         model = Kelas
-        fields = ['nama_kelas', 'guru']
+        fields = ['nama_kelas', 'guru', 'nama_grup_wa']
         widgets = {
             'nama_kelas': forms.TextInput(attrs={'class': 'w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5'}),
             'guru': forms.Select(attrs={'class': 'w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5'}),
+            'nama_grup_wa': forms.TextInput(attrs={'class': 'w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5'}),
         }
 
 class MapelForm(forms.ModelForm):

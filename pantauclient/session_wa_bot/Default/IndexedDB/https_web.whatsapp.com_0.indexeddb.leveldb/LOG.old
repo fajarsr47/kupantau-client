@@ -1,4 +1,4 @@
-2025/11/25-19:47:55.866 1108 Reusing MANIFEST G:\Web\KuPantau\Kupantau_Client\pantauclient\session_wa_bot\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
-2025/11/25-19:47:55.867 1108 Recovering log #119
-2025/11/25-19:47:55.874 1108 Reusing old log G:\Web\KuPantau\Kupantau_Client\pantauclient\session_wa_bot\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/000119.log 
-2025/11/25-19:47:57.059 53bc Manual compaction at level-0 from '\x000\x00\x00\x00' @ 72057594037927935 : 1 .. '\x001\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/11/27-15:24:48.925 4fdc Reusing MANIFEST G:\Web\KuPantau\Kupantau_Client\pantauclient\session_wa_bot\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2025/11/27-15:24:48.926 4fdc Recovering log #153
+2025/11/27-15:24:48.933 4fdc Reusing old log G:\Web\KuPantau\Kupantau_Client\pantauclient\session_wa_bot\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/000153.log 
+2025/11/27-15:24:50.246 5104 Manual compaction at level-0 from '\x00:\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00;\x00\x00\x00' @ 0 : 0; will stop at (end)

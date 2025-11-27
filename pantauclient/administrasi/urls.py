@@ -22,6 +22,9 @@ urlpatterns = [
     path('presensi/manual/get-siswa', views.get_siswa_presensi_manual, name='get_siswa_presensi_manual'),
     path('presensi/manual/save', views.save_presensi_manual, name='save_presensi_manual'),
 
+    # Di dalam urlpatterns administrasi/urls.py
+    path('presensi/tutup-harian/', views.tutup_presensi_harian, name='tutup_presensi_harian'),
+
     # =========================
     #   Rekap
     # =========================

@@ -533,8 +533,7 @@ def import_gambar(request):
 @require_POST
 def deteksi_frame(request):
     """
-    Terima 1 frame (base64) dari browser, jalankan face_detect, balikan hasil.
-    Body JSON: { "image": "data:image/jpeg;base64,...." }
+    Terima 1 frame, deteksi wajah, dan KEMBALIKAN DATA LENGKAP (Termasuk Kelas).
     """
     data = json.loads(request.body.decode('utf-8'))
     img_b64 = data.get('image')
@@ -542,12 +541,33 @@ def deteksi_frame(request):
         return HttpResponseBadRequest("image wajib diisi")
 
     from akademik.face_detect import detect_from_base64
+    from akademik.models import Siswa # Pastikan import ini ada
+    
+    # 1. Deteksi Wajah
     detected = detect_from_base64(img_b64)
-    # Tambahkan timestamp server (Asia/Jakarta)
+    
+    # 2. Ambil Info Kelas dari Database (Optimasi Query)
+    # Kumpulkan semua NISN yang terdeteksi
+    nisn_list = [d.get('nisn') for d in detected if d.get('nisn')]
+    
+    # Mapping NISN -> Nama Kelas
+    kelas_map = {}
+    if nisn_list:
+        siswas = Siswa.objects.filter(nisn__in=nisn_list).select_related('kelas')
+        for s in siswas:
+            kelas_map[s.nisn] = s.kelas.nama_kelas if s.kelas else "-"
+
+    # 3. Gabungkan Data
     ts = timezone.localtime()
     ts_iso = ts.isoformat()
+    
     for d in detected:
         d['timestamp'] = ts_iso
+        # Masukkan info kelas ke respon JSON
+        if d.get('nisn'):
+            d['kelas'] = kelas_map.get(d['nisn'], '-')
+        else:
+            d['kelas'] = '-'
 
     return JsonResponse({'detected': detected})
 
@@ -645,27 +665,19 @@ def save_presensi_manual(request):
     try:
         data = json.loads(request.body)
         tanggal_str = data.get('tanggal')
-        updates = data.get('updates') # List of {id: 1, status: 'H'}
+        updates = data.get('updates')
         
         if not tanggal_str or not updates:
             return JsonResponse({'error': 'Data tidak lengkap'}, status=400)
 
         tanggal = timezone.datetime.strptime(tanggal_str, '%Y-%m-%d').date()
-        
-        # Melacak kelas mana saja yang diupdate user
-        affected_kelas_ids = set() 
         saved_count = 0
         
         for item in updates:
             siswa_id = item.get('id')
             status = item.get('status')
             
-            # Ambil data siswa
             siswa_obj = get_object_or_404(Siswa, id=siswa_id)
-            
-            if siswa_obj.kelas:
-                affected_kelas_ids.add(siswa_obj.kelas.id)
-
             waktu = timezone.make_aware(timezone.datetime.combine(tanggal, timezone.datetime.min.time()))
 
             PresensiSekolah.objects.update_or_create(
@@ -675,19 +687,16 @@ def save_presensi_manual(request):
             )
             saved_count += 1
             
-        # --- KIRIM WA ---
-        # Panggil fungsi queue untuk setiap kelas yang terdampak
-        for k_id in affected_kelas_ids:
-            proses_laporan_wa(k_id, tanggal, mode="MANUAL")
-
+        # --- PERBAIKAN: TIDAK ADA PENGIRIMAN WA DI SINI ---
+        # Laporan WA hanya dikirim lewat menu 'Tutup Presensi'
+        
         return JsonResponse({
             'ok': True, 
-            'message': f'{saved_count} data disimpan. Laporan WA masuk antrean.'
+            'message': f'{saved_count} data berhasil disimpan secara manual.'
         })
 
     except Exception as e:
         return JsonResponse({'ok': False, 'error': str(e)}, status=500)
-
 
 # =============================================
 #  LOGIKA 2: DETEKSI WAJAH / SCAN (SIMPAN + WA)
@@ -696,103 +705,121 @@ def save_presensi_manual(request):
 @transaction.atomic
 def deteksi_save(request):
     """
-    Menangani hasil Face Recognition DAN Scan Gambar.
-    Perilaku:
-    1. Yang terdeteksi -> Hadir (H)
-    2. Yang tidak terdeteksi (dalam kelas yg sama) -> Alpha (A)
-    3. Kirim WA ke masing-masing kelas.
+    Hanya simpan status HADIR dari deteksi wajah/scan.
+    Tidak ada Alpha otomatis, Tidak ada WA otomatis.
     """
-    payload = json.loads(request.body.decode('utf-8'))
-    arr = payload.get('detected') or [] # List of {nisn: '...', timestamp: '...'}
+    try:
+        payload = json.loads(request.body.decode('utf-8'))
+        arr = payload.get('detected') or []
+        
+        if not isinstance(arr, list):
+            return HttpResponseBadRequest("Format data salah")
+
+        # Grouping per tanggal
+        by_date = {}
+        for it in arr:
+            nisn = (it.get('nisn') or '').strip()
+            ts = it.get('timestamp')
+            if not nisn: continue
+            
+            try:
+                ts_dt = timezone.datetime.fromisoformat(ts)
+                if timezone.is_naive(ts_dt):
+                    ts_dt = timezone.make_aware(ts_dt, timezone.get_current_timezone())
+            except:
+                ts_dt = timezone.localtime()
+            
+            d = ts_dt.date()
+            by_date.setdefault(d, []).append((nisn, ts_dt))
+
+        total_saved = 0
+        
+        for d, items in by_date.items():
+            # Filter duplikat lokal
+            seen = {}
+            for nisn, ts_dt in items:
+                seen.setdefault(nisn, ts_dt)
+                if ts_dt < seen[nisn]: seen[nisn] = ts_dt
+
+            # Ambil data siswa
+            nisn_list = list(seen.keys())
+            siswa_qs = Siswa.objects.filter(nisn__in=nisn_list)
+            siswa_map = {s.nisn: s for s in siswa_qs}
+            
+            for nisn, ts_dt in seen.items():
+                s = siswa_map.get(nisn)
+                if s:
+                    # Update jadi HADIR
+                    PresensiSekolah.objects.update_or_create(
+                        siswa=s, tanggal=d,
+                        defaults={'status': PresensiStatus.H, 'waktu': ts_dt}
+                    )
+                    total_saved += 1
+
+        # --- PERBAIKAN: TIDAK ADA PENGIRIMAN WA DI SINI ---
+
+        return JsonResponse({'ok': True, 'saved': total_saved})
+
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+def tutup_presensi_harian(request):
+    """
+    Fungsi Pamungkas. Dijalankan manual oleh Admin setelah jam masuk.
+    1. Cari siswa yang belum punya status hari ini -> Tandai ALPHA.
+    2. Kirim Laporan WA ke SEMUA KELAS yang ada siswanya.
+    """
+    if request.method != 'POST':
+        return HttpResponseBadRequest("Harus POST")
+
+    tanggal = timezone.localtime().date() # Hari ini
+    waktu_alpha = timezone.make_aware(timezone.datetime.combine(tanggal, timezone.datetime.min.time()))
     
-    if not isinstance(arr, list):
-        return HttpResponseBadRequest("Format data salah")
-
-    # Grouping berdasarkan tanggal (biasanya hari ini)
-    by_date = {}
-    for it in arr:
-        nisn = (it.get('nisn') or '').strip()
-        ts = it.get('timestamp')
-        if not nisn or not ts: continue
-        
-        try:
-            ts_dt = timezone.datetime.fromisoformat(ts)
-            if timezone.is_naive(ts_dt):
-                ts_dt = timezone.make_aware(ts_dt, timezone.get_current_timezone())
-        except:
-            ts_dt = timezone.localtime()
+    # 1. TANDAI ALPHA MASSAL
+    # Ambil semua ID siswa aktif
+    all_siswa = Siswa.objects.all().values('id', 'kelas_id')
+    
+    # Ambil ID siswa yang SUDAH absen (Hadir/Izin/Sakit/Terlambat) hari ini
+    sudah_absen_ids = set(
+        PresensiSekolah.objects.filter(tanggal=tanggal).values_list('siswa_id', flat=True)
+    )
+    
+    bulk_alpha = []
+    kelas_terdampak_ids = set()
+    
+    for s in all_siswa:
+        if s['id'] not in sudah_absen_ids:
+            # Belum absen -> Alpha
+            bulk_alpha.append(PresensiSekolah(
+                siswa_id=s['id'],
+                tanggal=tanggal,
+                status=PresensiStatus.A,
+                waktu=waktu_alpha
+            ))
+            if s['kelas_id']:
+                kelas_terdampak_ids.add(s['kelas_id'])
+        else:
+            # Sudah absen -> Masukkan kelasnya ke daftar kirim WA juga
+            # (Agar kelas yang hadir semua tetap dapat laporan)
+            if s['kelas_id']:
+                kelas_terdampak_ids.add(s['kelas_id'])
+    
+    # Simpan Alpha ke Database
+    if bulk_alpha:
+        PresensiSekolah.objects.bulk_create(bulk_alpha, ignore_conflicts=True)
+    
+    # 2. KIRIM WA MASSAL (ANTREAN)
+    # Import helper kita
+    from .wa_bot import proses_laporan_wa
+    
+    jumlah_laporan = 0
+    for k_id in kelas_terdampak_ids:
+        sukses = proses_laporan_wa(k_id, tanggal, mode="SCAN")
+        if sukses:
+            jumlah_laporan += 1
             
-        d = ts_dt.date()
-        by_date.setdefault(d, []).append((nisn, ts_dt))
-
-    total_hadir = 0
-    total_alpha = 0
-    affected_kelas_ids = set() # Kelas yang datanya berubah
-
-    for d, items in by_date.items():
-        # Filter duplikat (ambil waktu terawal)
-        seen = {}
-        for nisn, ts_dt in items:
-            seen.setdefault(nisn, ts_dt)
-            if ts_dt < seen[nisn]: seen[nisn] = ts_dt
-
-        # 1. Simpan HADIR
-        nisn_list = list(seen.keys())
-        siswa_qs = Siswa.objects.filter(nisn__in=nisn_list).select_related('kelas')
-        siswa_map = {s.nisn: s for s in siswa_qs}
-        
-        # Simpan yang hadir
-        for nisn, ts_dt in seen.items():
-            s = siswa_map.get(nisn)
-            if s:
-                if s.kelas: affected_kelas_ids.add(s.kelas.id)
-                
-                PresensiSekolah.objects.update_or_create(
-                    siswa=s, tanggal=d,
-                    defaults={'status': PresensiStatus.H, 'waktu': ts_dt}
-                )
-                total_hadir += 1
-
-        # 2. Simpan ALPHA (Otomatis untuk siswa lain di KELAS YANG SAMA)
-        # Kita hanya menandai Alpha pada kelas yang ada siswanya hadir tadi.
-        # Agar tidak satu sekolah kena Alpha semua jika cuma scan 1 kelas.
-        if affected_kelas_ids:
-            siswa_sekelas = Siswa.objects.filter(kelas_id__in=affected_kelas_ids).values('id', 'kelas_id')
-            
-            # Ambil siapa saja yang SUDAH absen hari ini (Hadir/Izin/Sakit)
-            sudah_absen_ids = set(
-                PresensiSekolah.objects.filter(tanggal=d).values_list('siswa_id', flat=True)
-            )
-            
-            create_alpha = []
-            waktu_alpha = timezone.make_aware(timezone.datetime.combine(d, timezone.datetime.min.time()))
-            
-            for row in siswa_sekelas:
-                if row['id'] not in sudah_absen_ids:
-                    create_alpha.append(PresensiSekolah(
-                        siswa_id=row['id'],
-                        tanggal=d,
-                        status=PresensiStatus.A,
-                        waktu=waktu_alpha
-                    ))
-            
-            if create_alpha:
-                PresensiSekolah.objects.bulk_create(create_alpha, ignore_conflicts=True)
-                total_alpha += len(create_alpha)
-
-    # --- KIRIM WA ---
-    if affected_kelas_ids and by_date:
-        tgl_target = list(by_date.keys())[0]
-        for k_id in affected_kelas_ids:
-            proses_laporan_wa(k_id, tgl_target, mode="SCAN")
-
-    return JsonResponse({
-        'ok': True, 
-        'hadir': total_hadir, 
-        'alpha_otomatis': total_alpha
-    })
-
-
+    messages.success(request, f"Presensi Ditutup! {len(bulk_alpha)} siswa ditandai Alpha. {jumlah_laporan} laporan WA masuk antrean.")
+    return redirect('rekap') # Atau redirect ke dashboard
 
 # GANTI FUNGSI LAMA DENGAN YANG INI
 def get_rekap_data(request):

@@ -64,161 +64,200 @@
 
 {% block extra_js %}
 <script>
-(function(){
-  const elVideo  = document.getElementById('videoCam');
-  const btnStart = document.getElementById('btnMulai');
-  const btnStop  = document.getElementById('btnStop');
-  const tbodyDet = document.getElementById('listDeteksi');
-  const tbodyPre = document.getElementById('listPresensi');
-  const btnSave  = document.getElementById('btnSimpanKirim');
+document.addEventListener("DOMContentLoaded", () => {
+    // --- 1. INISIALISASI ID SESUAI KODE ORIGINAL KAMU ---
+    const elVideo    = document.getElementById('videoCam');
+    const btnStart   = document.getElementById('btnMulai');
+    const btnStop    = document.getElementById('btnStop');
+    const tbodyDet   = document.getElementById('listDeteksi');
+    const tbodyPre   = document.getElementById('listPresensi');
+    
+    // Konfigurasi Kiosk
+    const COOLDOWN_DETIK = 60; 
+    let scannedNISNs = {}; // Memori lokal (NISN -> Timestamp)
+    
+    let stream = null;
+    let timer = null;
+    let isProcessing = false;
 
-  // CSRF Django
-  function getCookie(name) {
-    const v = ('; ' + document.cookie).split('; ' + name + '=');
-    if (v.length === 2) return v.pop().split(';').shift();
-  }
-  const csrftoken = getCookie('csrftoken');
-  const headers = {'Content-Type':'application/json', 'X-CSRFToken': csrftoken};
+    // --- 2. SETUP TOMBOL ---
+    if (btnStart) btnStart.addEventListener('click', startCamera);
+    if (btnStop)  btnStop.addEventListener('click', stopCamera);
 
-  let stream = null, timer = null;
+    // --- 3. FUNGSI KAMERA ---
+    async function startCamera() {
+        if(stream) return;
+        try {
+            // Cek permission dulu
+            stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { width: { ideal: 640 }, height: { ideal: 480 } }, 
+                audio: false 
+            });
+            elVideo.srcObject = stream;
+            
+            // Tunggu video play baru mulai loop
+            elVideo.onloadedmetadata = () => {
+                elVideo.play();
+                timer = setInterval(captureAndSend, 1000); // Scan tiap 1 detik
+            };
 
-  // Map NISN -> { ts: ISOString, label, nama? }
-  const detectedMap = new Map();
+            // UI Feedback
+            btnStart.disabled = true;
+            btnStart.classList.add('opacity-50', 'cursor-not-allowed');
+            btnStop.disabled = false;
+            btnStop.classList.remove('opacity-50', 'cursor-not-allowed');
 
-  function renderDeteksi(list){
-    if(!list || !list.length){
-      tbodyDet.innerHTML = `
-        <tr><td class="p-3 text-left" colspan="3">
-          <span class="text-sm text-gray-500">Belum ada wajah terdeteksi…</span>
-        </td></tr>`;
-      return;
+        } catch(e) { 
+            alert('Gagal akses kamera: ' + e.message + '\nPastikan HTTPS atau Localhost.'); 
+        }
     }
-    tbodyDet.innerHTML = list.map((d,i)=>`
-      <tr>
-        <td class="p-3 text-left">${i+1}</td>
-        <td class="p-3 text-left">${d.nama || d.label} <span class="text-gray-500">(${d.nisn||'-'})</span></td>
-        <td class="p-3 text-center">${d.confidence}%</td>
-      </tr>`).join('');
-  }
 
-  // Lookup biodata siswa ke DB berdasarkan NISN
-  async function resolveBiodata() {
-    const nisns = Array.from(detectedMap.keys());
-    if(nisns.length === 0) {
-      tbodyPre.innerHTML = `
-        <tr><td class="p-3 text-left" colspan="4">
-          <span class="text-sm text-gray-500">Belum ada data presensi. Mulai deteksi terlebih dahulu.</span>
-        </td></tr>`;
-      return;
+    function stopCamera() {
+        if(timer) { clearInterval(timer); timer = null; }
+        if(stream) { stream.getTracks().forEach(t=>t.stop()); stream = null; }
+        elVideo.srcObject = null;
+        
+        // Reset UI
+        btnStart.disabled = false;
+        btnStart.classList.remove('opacity-50', 'cursor-not-allowed');
+        btnStop.disabled = true;
+        btnStop.classList.add('opacity-50', 'cursor-not-allowed');
     }
-    try{
-      const res = await fetch("{% url 'deteksi_resolve' %}", {
-        method:'POST', headers, body: JSON.stringify({nisns})
-      });
-      const {items=[]} = await res.json();
-      // urutkan sesuai urutan masuk (waktu terawal)
-      const rows = [];
-      let i = 1;
-      items.forEach(it=>{
-        const rec = detectedMap.get(it.nisn);
-        if(!rec) return;
-        rows.push(`
-          <tr>
-            <td class="p-3 text-left">${i++}</td>
-            <td class="p-3 text-left">${it.nisn}</td>
-            <td class="p-3 text-left">${it.nama || (rec.label)}</td>
-            <td class="p-3 text-left">${it.kelas || '-'}</td>
-          </tr>`);
-      });
-      tbodyPre.innerHTML = rows.join('');
-    }catch(e){
-      // fallback minimal jika gagal resolve
-      const rows = []; let i=1;
-      detectedMap.forEach((v, nisn)=>{
-        rows.push(`
-          <tr>
-            <td class="p-3 text-left">${i++}</td>
-            <td class="p-3 text-left">${nisn}</td>
-            <td class="p-3 text-left">${v.label}</td>
-            <td class="p-3 text-left">-</td>
-          </tr>`);
-      });
-      tbodyPre.innerHTML = rows.join('');
+
+    // --- 4. CORE LOGIC: CAPTURE & AUTO-SAVE ---
+    function captureAndSend() {
+        if (!elVideo || isProcessing) return;
+        isProcessing = true;
+
+        // Capture Gambar
+        const c = document.createElement('canvas');
+        c.width = elVideo.videoWidth;
+        c.height = elVideo.videoHeight;
+        c.getContext('2d').drawImage(elVideo, 0, 0);
+        const dataURL = c.toDataURL('image/jpeg', 0.6);
+
+        // Kirim ke Backend
+        fetch("{% url 'deteksi_frame' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json', 
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ image: dataURL })
+        })
+        .then(r => r.json())
+        .then(({ detected }) => {
+            detected = detected || [];
+            
+            // A. Update Tabel Kiri (Wajah Terdeteksi)
+            updateTableDeteksi(detected);
+
+            // B. Proses Auto-Save (Loop setiap wajah)
+            detected.forEach(d => {
+                // Hanya proses jika dikenali & ada NISN
+                if (d.nisn && d.nama && d.nama !== "Unknown") {
+                    handleKioskPresensi(d.nisn, d.nama, d.kelas);
+                }
+            });
+        })
+        .catch(err => console.error("Error frame:", err))
+        .finally(() => { isProcessing = false; });
     }
-  }
 
-  let isProcessing = false;
-  function captureAndSend(){
-    if(!elVideo || isProcessing) return; // <-- JIKA SEDANG MEMPROSES, JANGAN LAKUKAN APAPUN
-    isProcessing = true; // <-- TANDAI SEDANG MEMPROSES
-    const c = document.createElement('canvas');
-    c.width = elVideo.videoWidth || 640;
-    c.height = elVideo.videoHeight || 480;
-    c.getContext('2d').drawImage(elVideo, 0, 0, c.width, c.height);
-    const dataURL = c.toDataURL('image/jpeg', 0.6);
+    // --- 5. LOGIKA KIOSK (COOLDOWN & SIMPAN) ---
+    async function handleKioskPresensi(nisn, nama, kelas) {
+        const now = Date.now();
+        
+        // Cek Cooldown
+        if (scannedNISNs[nisn] && (now - scannedNISNs[nisn] < COOLDOWN_DETIK * 1000)) {
+            return; // Skip, masih cooldown
+        }
 
-    fetch("{% url 'deteksi_frame' %}", { method:'POST', headers, body: JSON.stringify({image: dataURL}) })
-      .then(r=>r.json())
-      .then(({detected})=>{
-        detected = detected || [];
-        renderDeteksi(detected);
+        scannedNISNs[nisn] = now; // Kunci
 
-        // simpan waktu TERAWAL per NISN (gate masuk)
-        let changed = false;
-        detected.forEach(d=>{
-          if(!d.nisn) return;
-          if(!detectedMap.has(d.nisn)) {
-            detectedMap.set(d.nisn, { ts: d.timestamp, label: d.nama || d.label });
-            changed = true;
-          } else {
-            const oldTs = new Date(detectedMap.get(d.nisn).ts);
-            const newTs = new Date(d.timestamp);
-            if(newTs < oldTs) {
-              detectedMap.set(d.nisn, { ts: d.timestamp, label: d.nama || d.label });
-              changed = true;
-            }
-          }
-        });
-        if(changed) resolveBiodata();
-      })
-      .catch(()=>{ /* biarkan loop lanjut */ })
-      .finally(() => {
-        isProcessing = false; // <-- TANDAI SELESAI MEMPROSES, BAIK BERHASIL MAUPUN GAGAL
-      });
-  }
+        // 1. Tampilkan Notifikasi & Suara
+        playBeep();
+        showFloatingNotif(nama);
 
-  async function start(){
-    if(stream) return;
-    try{
-      stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}, audio:false});
-      elVideo.srcObject = stream; await elVideo.play();
-      // kirim frame periodik
-      timer = setInterval(captureAndSend, 800);
-    }catch(e){ alert('Gagal akses kamera: '+e.message); }
-  }
-  function stop(){
-    if(timer){ clearInterval(timer); timer=null; }
-    if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
-  }
-  function save(){
-    if(detectedMap.size===0){ alert('Belum ada siswa yang terdeteksi.'); return; }
-    const detected = []; detectedMap.forEach((v, nisn)=>detected.push({nisn, timestamp: v.ts}));
-    fetch("{% url 'deteksi_save' %}", { method:'POST', headers, body: JSON.stringify({detected}) })
-      .then(r=>r.json())
-      .then(res=>{
-        if(res.ok) alert(`Tersimpan. Hadir: ${res.hadir_saved}, Alpha dibuat: ${res.alpha_created}.`);
-        else alert('Gagal menyimpan.');
-      })
-      .catch(()=>alert('Gagal menyimpan.'));
-  }
+        // 2. Tambah ke Tabel Kanan (Hasil Presensi)
+        addRowToPresensi(nisn, nama, kelas);
 
-  btnStart && btnStart.addEventListener('click', start);
-  btnStop  && btnStop.addEventListener('click', stop);
-  btnSave  && btnSave.addEventListener('click', save);
+        // 3. Simpan ke Database
+        try {
+            await fetch("{% url 'deteksi_save' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify({
+                    detected: [{ nisn: nisn, timestamp: new Date().toISOString() }]
+                })
+            });
+            console.log(`Saved: ${nama} (${kelas})`);
+        } catch (e) {
+            console.error("Gagal simpan:", e);
+            delete scannedNISNs[nisn]; // Reset jika gagal
+        }
+    }
 
-  // render awal
-  tbodyDet.innerHTML = `<tr><td class="p-3 text-left" colspan="3"><span class="text-sm text-gray-500">Belum ada wajah terdeteksi…</span></td></tr>`;
-  tbodyPre.innerHTML = `<tr><td class="p-3 text-left" colspan="4"><span class="text-sm text-gray-500">Belum ada data presensi. Mulai deteksi terlebih dahulu.</span></td></tr>`;
-})();
+    // --- 6. UPDATE UI TABEL ---
+    function updateTableDeteksi(list) {
+        if (!list.length) {
+            // Jangan hapus jika kosong sebentar agar tidak kedip, atau reset jika lama
+            // tbodyDet.innerHTML = `...`; // Opsional
+            return;
+        }
+        tbodyDet.innerHTML = list.map((d, i) => `
+            <tr>
+                <td class="p-3 text-left">${i + 1}</td>
+                <td class="p-3 text-left font-medium">${d.nama || 'Unknown'}</td>
+                <td class="p-3 text-left text-sm text-gray-500">${Math.round(d.confidence || 0)}%</td>
+            </tr>
+        `).join('');
+    }
+
+    function addRowToPresensi(nisn, nama, kelas) {
+        // Hapus pesan "Belum ada data" jika ada
+        if (tbodyPre.querySelector('td[colspan]')) {
+            tbodyPre.innerHTML = '';
+        }
+
+        const no = tbodyPre.children.length + 1;
+        const row = `
+            <tr class="bg-green-50 animate-pulse transition-all duration-500">
+                <td class="p-3 text-left">${no}</td>
+                <td class="p-3 text-left font-mono">${nisn}</td>
+                <td class="p-3 text-left font-bold text-green-800">${nama}</td>
+                <td class="p-3 text-left font-semibold">${kelas || '-'}</td>
+            </tr>
+        `;
+        // Tambah di paling atas
+        tbodyPre.insertAdjacentHTML('afterbegin', row);
+    }
+
+    // --- 7. HELPER NOTIFIKASI ---
+    function showFloatingNotif(nama) {
+        const div = document.createElement('div');
+        div.className = "fixed top-10 left-1/2 -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-2xl shadow-2xl z-50 font-bold animate-bounce flex items-center gap-2";
+        div.innerHTML = `<span>✅</span> <span>Berhasil: ${nama}</span>`;
+        document.body.appendChild(div);
+        setTimeout(() => div.remove(), 3000);
+    }
+
+    function playBeep() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.frequency.value = 1000;
+            gain.gain.value = 0.1;
+            osc.start();
+            setTimeout(() => osc.stop(), 150);
+        } catch(e){}
+    }
+});
 </script>
 {% endblock extra_js %}
