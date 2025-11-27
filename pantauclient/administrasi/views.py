@@ -26,6 +26,7 @@ import threading # Agar browser jalan di background tidak bikin loading lama
 from .wa_bot import proses_laporan_wa
 
 
+
 # Create your views here.
 def index(request):
     context = {
@@ -662,41 +663,129 @@ def get_siswa_presensi_manual(request):
 @require_POST
 @transaction.atomic
 def save_presensi_manual(request):
+    """
+    Logika Presensi Manual:
+    - Jika data sudah ada: Update Status saja, Waktu TETAP (Pertahankan waktu scan awal).
+    - Jika data baru: Status Baru, Waktu = SEKARANG (Realtime).
+    """
     try:
         data = json.loads(request.body)
         tanggal_str = data.get('tanggal')
-        updates = data.get('updates')
+        updates = data.get('updates') # List of {id: 1, status: 'H'}
         
         if not tanggal_str or not updates:
             return JsonResponse({'error': 'Data tidak lengkap'}, status=400)
 
         tanggal = timezone.datetime.strptime(tanggal_str, '%Y-%m-%d').date()
         saved_count = 0
+        affected_kelas_ids = set()
         
+        # Waktu saat ini (untuk data BARU)
+        waktu_sekarang = timezone.localtime()
+
         for item in updates:
             siswa_id = item.get('id')
             status = item.get('status')
             
             siswa_obj = get_object_or_404(Siswa, id=siswa_id)
-            waktu = timezone.make_aware(timezone.datetime.combine(tanggal, timezone.datetime.min.time()))
+            if siswa_obj.kelas:
+                affected_kelas_ids.add(siswa_obj.kelas.id)
 
-            PresensiSekolah.objects.update_or_create(
-                siswa=siswa_obj,
-                tanggal=tanggal,
-                defaults={'status': status, 'waktu': waktu}
-            )
-            saved_count += 1
+            # Cek apakah sudah ada data?
+            try:
+                presensi_obj = PresensiSekolah.objects.get(siswa=siswa_obj, tanggal=tanggal)
+                
+                # JIKA ADA: Hanya update status jika berubah. JANGAN update waktu.
+                if presensi_obj.status != status:
+                    presensi_obj.status = status
+                    # update_fields=['status'] memastikan kolom 'waktu' tidak tersentuh
+                    presensi_obj.save(update_fields=['status'])
+                saved_count += 1
+
+            except PresensiSekolah.DoesNotExist:
+                # JIKA TIDAK ADA: Buat baru dengan waktu SEKARANG
+                PresensiSekolah.objects.create(
+                    siswa=siswa_obj,
+                    tanggal=tanggal,
+                    status=status,
+                    waktu=waktu_sekarang
+                )
+                saved_count += 1
             
-        # --- PERBAIKAN: TIDAK ADA PENGIRIMAN WA DI SINI ---
-        # Laporan WA hanya dikirim lewat menu 'Tutup Presensi'
-        
-        return JsonResponse({
-            'ok': True, 
-            'message': f'{saved_count} data berhasil disimpan secara manual.'
-        })
+        return JsonResponse({'ok': True, 'message': f'{saved_count} data berhasil disimpan.'})
 
     except Exception as e:
         return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+
+# ----------------------------------------------------
+# 2. PERBAIKAN DASHBOARD API (Agar Waktu Tampil Benar)
+# ----------------------------------------------------
+def get_dashboard_stats(request):
+    today = timezone.localtime().date()
+    total_siswa = Siswa.objects.count() or 1
+    
+    # Ambil data presensi hari ini
+    presensi_hari_ini = PresensiSekolah.objects.filter(tanggal=today)
+    
+    hadir = presensi_hari_ini.filter(status='H').count()
+    terlambat = presensi_hari_ini.filter(status='T').count()
+    izin = presensi_hari_ini.filter(status='I').count()
+    sakit = presensi_hari_ini.filter(status='S').count()
+    # Alpha tidak dihitung dalam "Sudah Absen" untuk logika "Belum Hadir"
+    
+    # Hitung Belum Hadir
+    sudah_absen = hadir + terlambat + izin + sakit
+    belum_hadir = total_siswa - sudah_absen
+    if belum_hadir < 0: belum_hadir = 0
+
+    total_hadir = hadir + terlambat
+    total_izin = izin + sakit
+    persen_hadir = int((total_hadir / total_siswa) * 100)
+
+    # Log Aktivitas (Perbaikan Waktu UTC -> WIB)
+    logs_qs = presensi_hari_ini.filter(status__in=['H', 'T']).select_related('siswa', 'siswa__kelas').order_by('-waktu')[:10]
+    
+    log_data = []
+    for l in logs_qs:
+        # KONVERSI WAKTU KE LOKAL SEBELUM FORMAT
+        waktu_lokal = timezone.localtime(l.waktu) if l.waktu else None
+        
+        log_data.append({
+            'nama': l.siswa.nama,
+            'kelas': l.siswa.kelas.nama_kelas if l.siswa.kelas else '-',
+            'waktu': waktu_lokal.strftime('%H:%M') if waktu_lokal else '-', # Format WIB
+            'status': l.get_status_display(),
+            'status_code': l.status
+        })
+
+    # ... (Bagian weekly_data tetap sama seperti sebelumnya) ...
+    start_week = today - timedelta(days=today.weekday())
+    weekly_data = []
+    for i in range(6): 
+        day_date = start_week + timedelta(days=i)
+        p_day = PresensiSekolah.objects.filter(tanggal=day_date)
+        h_day = p_day.filter(status='H').count()
+        t_day = p_day.filter(status='T').count()
+        pct_total = ((h_day + t_day) / total_siswa) * 100
+        pct_late = (t_day / total_siswa) * 100
+        weekly_data.append({
+            'hadir': h_day + t_day, 'terlambat': t_day,
+            'pct_total': round(pct_total, 1), 'pct_late': round(pct_late, 1)
+        })
+
+    return JsonResponse({
+        'stats': {
+            'total_hadir': total_hadir,
+            'belum_hadir': belum_hadir,
+            'terlambat': terlambat,
+            'izin_sakit': total_izin,
+            'persen_hadir': persen_hadir,
+            'total_siswa': total_siswa
+        },
+        'weekly': weekly_data,
+        'logs': log_data
+    })
 
 # =============================================
 #  LOGIKA 2: DETEKSI WAJAH / SCAN (SIMPAN + WA)
@@ -706,7 +795,7 @@ def save_presensi_manual(request):
 def deteksi_save(request):
     """
     Hanya simpan status HADIR dari deteksi wajah/scan.
-    Tidak ada Alpha otomatis, Tidak ada WA otomatis.
+    FIX: Konversi waktu ke WIB agar tidak masuk ke tanggal kemarin.
     """
     try:
         payload = json.loads(request.body.decode('utf-8'))
@@ -719,29 +808,35 @@ def deteksi_save(request):
         by_date = {}
         for it in arr:
             nisn = (it.get('nisn') or '').strip()
-            ts = it.get('timestamp')
+            ts = it.get('timestamp') # Format UTC dari JS: 2023-11-27T23:45:00.000Z
             if not nisn: continue
             
             try:
-                ts_dt = timezone.datetime.fromisoformat(ts)
-                if timezone.is_naive(ts_dt):
-                    ts_dt = timezone.make_aware(ts_dt, timezone.get_current_timezone())
-            except:
+                # 1. Parse string ISO
+                # replace 'Z' dengan '+00:00' agar kompatibel dengan python versi lama
+                ts_dt = timezone.datetime.fromisoformat(ts.replace('Z', '+00:00'))
+                
+                # 2. KONVERSI KE WIB (PENTING!)
+                # Agar jam 06:00 pagi tidak dianggap jam 23:00 malam sebelumnya
+                current_tz = timezone.get_current_timezone()
+                ts_dt = ts_dt.astimezone(current_tz)
+                
+            except Exception as e:
+                # Fallback jika error parsing
                 ts_dt = timezone.localtime()
             
+            # 3. Ambil tanggal setelah dikonversi (Sekarang sudah benar tanggal hari ini)
             d = ts_dt.date()
             by_date.setdefault(d, []).append((nisn, ts_dt))
 
         total_saved = 0
         
         for d, items in by_date.items():
-            # Filter duplikat lokal
             seen = {}
             for nisn, ts_dt in items:
                 seen.setdefault(nisn, ts_dt)
                 if ts_dt < seen[nisn]: seen[nisn] = ts_dt
 
-            # Ambil data siswa
             nisn_list = list(seen.keys())
             siswa_qs = Siswa.objects.filter(nisn__in=nisn_list)
             siswa_map = {s.nisn: s for s in siswa_qs}
@@ -755,8 +850,6 @@ def deteksi_save(request):
                         defaults={'status': PresensiStatus.H, 'waktu': ts_dt}
                     )
                     total_saved += 1
-
-        # --- PERBAIKAN: TIDAK ADA PENGIRIMAN WA DI SINI ---
 
         return JsonResponse({'ok': True, 'saved': total_saved})
 
@@ -1071,6 +1164,7 @@ def kenaikan_kelas(request):
         'max_level': max_level
     })
 
+
 @transaction.atomic
 def kelulusan_siswa(request):
     # 1. Ambil semua kelas
@@ -1122,4 +1216,89 @@ def kelulusan_siswa(request):
         'siswa_akhir': siswa_akhir,
         'tingkat': max_level if max_level != -1 else "Tidak Terdeteksi",
         'daftar_kelas_akhir': ", ".join(nama_kelas_akhir)
+    })
+
+
+def get_dashboard_stats(request):
+    """
+    API Dashboard Realtime.
+    Mengirimkan data statistik presensi hari ini.
+    """
+    today = timezone.localtime().date()
+    
+    # 1. Total Siswa Aktif
+    total_siswa = Siswa.objects.count() or 1 
+    
+    # 2. Ambil semua data presensi hari ini
+    presensi_hari_ini = PresensiSekolah.objects.filter(tanggal=today)
+    
+    # 3. Hitung per Kategori Status
+    hadir_count = presensi_hari_ini.filter(status='H').count()
+    terlambat_count = presensi_hari_ini.filter(status='T').count()
+    izin_count = presensi_hari_ini.filter(status='I').count()
+    sakit_count = presensi_hari_ini.filter(status='S').count()
+    alpha_count = presensi_hari_ini.filter(status='A').count() # Jika ada input manual
+    
+    # 4. Hitung "Belum Hadir"
+    # Rumus: Total Siswa - (Hadir + Terlambat + Izin + Sakit + Alpha)
+    # Artinya: Siswa yang SAMA SEKALI belum ada datanya hari ini.
+    sudah_ada_status = hadir_count + terlambat_count + izin_count + sakit_count + alpha_count
+    belum_hadir = total_siswa - sudah_ada_status
+    
+    if belum_hadir < 0: 
+        belum_hadir = 0
+
+    # 5. Grouping untuk Tampilan Dashboard
+    total_hadir_display = hadir_count + terlambat_count # Untuk Kartu "Total Hadir"
+    total_izin_sakit = izin_count + sakit_count         # Untuk Kartu "Izin/Sakit"
+    
+    # Persentase Kehadiran (Hanya yang fisik hadir di sekolah)
+    persen_hadir = int((total_hadir_display / total_siswa) * 100)
+
+    # 6. Data Grafik Mingguan (Senin - Sabtu)
+    start_week = today - timedelta(days=today.weekday())
+    weekly_data = []
+    
+    for i in range(6): 
+        day_date = start_week + timedelta(days=i)
+        p_day = PresensiSekolah.objects.filter(tanggal=day_date)
+        
+        h_day = p_day.filter(status='H').count()
+        t_day = p_day.filter(status='T').count()
+        
+        pct_total = ((h_day + t_day) / total_siswa) * 100
+        pct_late = (t_day / total_siswa) * 100
+        
+        weekly_data.append({
+            'date': day_date.strftime('%d/%m'),
+            'hadir': h_day + t_day,
+            'terlambat': t_day,
+            'pct_total': round(pct_total, 1),
+            'pct_late': round(pct_late, 1)
+        })
+
+    # 7. Log Aktivitas (Hanya Hadir & Terlambat untuk live feed)
+    logs_qs = presensi_hari_ini.filter(status__in=['H', 'T']).select_related('siswa', 'siswa__kelas').order_by('-waktu')[:10]
+    
+    log_data = []
+    for l in logs_qs:
+        log_data.append({
+            'nama': l.siswa.nama,
+            'kelas': l.siswa.kelas.nama_kelas if l.siswa.kelas else '-',
+            'waktu': l.waktu.strftime('%H:%M') if l.waktu else '-',
+            'status': l.get_status_display(),
+            'status_code': l.status
+        })
+
+    return JsonResponse({
+        'stats': {
+            'total_hadir': total_hadir_display,
+            'terlambat': terlambat_count,
+            'belum_hadir': belum_hadir,   # <-- Nilai yang sudah diperbaiki
+            'izin_sakit': total_izin_sakit,
+            'persen_hadir': persen_hadir,
+            'total_siswa': total_siswa
+        },
+        'weekly': weekly_data,
+        'logs': log_data
     })

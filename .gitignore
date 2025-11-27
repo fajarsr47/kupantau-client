@@ -6,3 +6,4 @@ __init__.py
 ngrok.exe
 media/
 media/temp_reports/
+session_wa_bot/

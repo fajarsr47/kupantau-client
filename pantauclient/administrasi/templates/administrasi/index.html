@@ -1,67 +1,346 @@
 {% extends "administrasi/base.html" %}
 {% load static %}
+
 {% block isi %}
-    <div class="grid grid-cols-2 gap-2.5 lg:gap-5 h-fit w-full md:grid-cols-4">
-        <div class="flex items-center justify-start pl-3 gap-2 bg-white h-16 w-full rounded-xl shadow-sm md:shadow-xl md:h-24 lg:h-44">
-            <img class="size-14 lg:size-24" src="{% static "icon/board/check.png" %}" alt="kehadiran">
-            <div class="flex flex-col h-full justify-center">
-                <h3 class="text-3xl lg:text-6xl font-bold">
-                    300
-                </h3>
-                <p class="text-xs lg:text-sm lg:font-semibold text-gray-600 lg:mt-3">Hadir</p>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-start justify-between hover:shadow-md transition-shadow">
+            <div class="h-full flex flex-col justify-between">
+                <p class="text-gray-500 text-sm font-medium mb-1">Total Hadir</p>
+                <h3 id="statTotal" class="text-5xl font-bold text-gray-800">0</h3>
+                <p id="statTotalDesc" class="text-xs mt-2 text-green-600 flex items-center gap-1">0% dari total siswa</p>
+            </div>
+            <div class="p-3 rounded-lg bg-blue-50 text-blue-500">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
             </div>
         </div>
-        <div class="flex items-center justify-start pl-3 gap-2 bg-white h-16 w-full rounded-xl shadow-sm md:shadow-xl md:h-24 lg:h-44">
-            <img class="size-14 lg:size-24" src="{% static "icon/board/terlambat.png" %}" alt="kehadiran">
-            <div class="flex flex-col h-full justify-center">
-                <h3 class="text-3xl lg:text-6xl font-bold">
-                    26
-                </h3>
-                <p class="text-xs lg:text-sm lg:font-semibold text-gray-600 lg:mt-3">Terlambat</p>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-start justify-between hover:shadow-md transition-shadow">
+            <div class="h-full flex flex-col justify-between">
+                <p class="text-gray-500 text-sm font-medium mb-1">Belum Hadir</p>
+                <h3 id="statAbsent" class="text-5xl font-bold text-gray-800">0</h3>
+                <p class="text-xs mt-2 text-gray-500 flex items-center gap-1">Menunggu Check-in</p>
+            </div>
+            <div class="p-3 rounded-lg bg-gray-100 text-gray-600">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="23" y1="11" x2="17" y2="11"></line></svg>
             </div>
         </div>
-        <div class="flex items-center justify-start pl-3 gap-2 bg-white h-16 w-full rounded-xl shadow-sm md:shadow-xl md:h-24 lg:h-44">
-            <img class="size-14 lg:size-24" src="{% static "icon/board/absen.png" %}" alt="kehadiran">
-            <div class="flex flex-col h-full justify-center">
-                <h3 class="text-3xl lg:text-6xl font-bold">
-                    347
-                </h3>
-                <p class="text-xs lg:text-sm lg:font-semibold text-gray-600 lg:mt-3">Tidak Hadir</p>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-start justify-between hover:shadow-md transition-shadow">
+            <div class="h-full flex flex-col justify-between">
+                <p class="text-gray-500 text-sm font-medium mb-1">Terlambat</p>
+                <h3 id="statLate" class="text-5xl font-bold text-gray-800">0</h3>
+                <p class="text-xs mt-2 text-red-500 flex items-center gap-1">Perlu perhatian</p>
+            </div>
+            <div class="p-3 rounded-lg bg-orange-50 text-orange-500">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
             </div>
         </div>
-        <div class="flex items-center justify-start pl-3 gap-2 bg-white h-16 w-full rounded-xl shadow-sm md:shadow-xl md:h-24 lg:h-44">
-            <img class="size-14 lg:size-24" src="{% static "icon/board/izin.png" %}" alt="kehadiran">
-            <div class="flex flex-col h-full justify-center">
-                <h3 class="text-3xl lg:text-6xl font-bold">
-                    6
-                </h3>
-                <p class="text-xs lg:text-sm lg:font-semibold text-gray-600 lg:mt-3">Izin/Sakit</p>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-start justify-between hover:shadow-md transition-shadow">
+            <div class="h-full flex flex-col justify-between">
+                <p class="text-gray-500 text-sm font-medium mb-1">Izin/Sakit</p>
+                <h3 id="statLeave" class="text-5xl font-bold text-gray-800">0</h3>
+                <p class="text-xs mt-2 text-gray-500 flex items-center gap-1">Terkonfirmasi</p>
+            </div>
+            <div class="h-full flex flex-col gap-3">
+                <div class="p-3 rounded-lg bg-purple-50 text-purple-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                </div>
+                <a href="#" class="relative group p-3 rounded-lg bg-green-50 text-green-500 hover:bg-green-100 hover:scale-105 transition-all duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </a>
             </div>
         </div>
     </div>
-    <div class="mt-2.5 flex flex-col-reverse md:flex-row gap-2.5 md:h-56">
-        <div class="bg-white h-36 w-full rounded-xl shadow-sm md:shadow-xl md:h-full"></div>
-        <div class="bg-white h-16 w-full rounded-xl shadow-sm md:shadow-xl flex flex-row items-center justify-around md:w-20 md:h-full md:flex-col">
-            <a href="#" class="h-12 w-12 bg-amber-600 rounded-xl"></a>
-            <a href="#" class="h-12 w-12 bg-amber-600 rounded-xl"></a>
-            <a href="#" class="h-12 w-12 bg-amber-600 rounded-xl"></a>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+        
+        <div class="lg:col-span-2 space-y-8">
+            
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-800">Statistik Mingguan</h3>
+                        <p class="text-sm text-gray-500">Perbandingan kehadiran</p>
+                    </div>
+                </div>
+                
+                <div id="weeklyChartContainer" class="h-64 w-full flex items-end justify-between gap-2 sm:gap-4 pt-4 border-b border-gray-200">
+                    {% for day in "012345"|make_list %}
+                    <div class="flex flex-col items-center gap-2 w-full group cursor-pointer relative">
+                        <div class="relative w-full max-w-[40px] flex items-end h-48 bg-gray-100 rounded-t-sm overflow-hidden">
+                            <div id="bar-total-{{ forloop.counter0 }}" class="w-full bg-blue-500 hover:bg-blue-600 transition-all duration-700 h-[0%] relative group-hover:opacity-90"></div>
+                            <div id="bar-late-{{ forloop.counter0 }}" class="absolute bottom-0 w-full bg-orange-400 h-[0%] transition-all duration-700"></div>
+                            
+                            <div id="tooltip-{{ forloop.counter0 }}" class="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                                ...
+                            </div>
+                        </div>
+                        <span class="text-xs text-gray-500 font-medium">
+                            {% if forloop.counter0 == 0 %}Senin{% elif forloop.counter0 == 1 %}Selasa{% elif forloop.counter0 == 2 %}Rabu{% elif forloop.counter0 == 3 %}Kamis{% elif forloop.counter0 == 4 %}Jumat{% else %}Sabtu{% endif %}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 lg:min-h-156">
+                <div class="flex flex-col sm:flex-row items-center justify-between mb-6 gap-4">
+                    <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        Log Presensi Hari Ini
+                        <span class="text-xs font-normal bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Live</span>
+                    </h3>
+                    <button class="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg> Filter
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="text-xs text-gray-500 uppercase bg-gray-50 border-y border-gray-100">
+                                <th class="px-4 py-3 font-semibold">Siswa</th>
+                                <th class="px-4 py-3 font-semibold">Waktu</th>
+                                <th class="px-4 py-3 font-semibold">Kelas</th>
+                                <th class="px-4 py-3 font-semibold">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="liveLogTable" class="divide-y divide-gray-100 text-sm">
+                            <tr><td colspan="4" class="px-4 py-3 text-center text-gray-400">Menunggu data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
-    </div>
-    <div class="mb-4 p-4 bg-white rounded-lg shadow border border-indigo-100 flex justify-between items-center">
-        <div>
-            <h3 class="text-lg font-bold text-indigo-900">Kontrol Harian</h3>
-            <p class="text-sm text-gray-500">Klik tombol ini setelah jam masuk berakhir (Contoh: 07:15).</p>
+
+        <div class="lg:col-span-1 space-y-8">
+            
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col h-[500px]">
+                <div class="p-4 border-b border-gray-100 bg-gray-50 rounded-t-xl flex justify-between items-center">
+                    <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                        <span class="relative flex h-3 w-3">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                        </span>
+                        Live Feed
+                    </h3>
+                    <span class="text-xs text-gray-400">Realtime</span>
+                </div>
+                <div id="liveFeedContainer" class="flex-1 overflow-y-auto p-2 space-y-1">
+                    </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <h3 class="font-bold text-gray-800 mb-4">Distribusi Kehadiran</h3>
+                <div class="h-48 flex items-center justify-center relative">
+                    
+                    <div id="pieChart" class="w-40 h-40 rounded-full relative shadow-inner transition-all duration-700" 
+                            style="background: conic-gradient(#3B82F6 0% 0%, #E5E7EB 0% 100%);">
+                        <div class="absolute inset-4 bg-white rounded-full flex flex-col items-center justify-center z-10">
+                            <p id="piePercent" class="text-2xl font-bold text-gray-800">0%</p>
+                            <p class="text-[10px] text-gray-500 uppercase">Kehadiran</p>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="flex justify-center gap-4 mt-6 text-xs text-gray-600">
+                    <div class="flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-blue-500"></span> Masuk
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-gray-300"></span> Belum
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-purple-500"></span> Izin
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-4 p-4 bg-white rounded-lg shadow border border-indigo-100 flex flex-col gap-5 justify-between items-center">
+                <div class="w-full">
+                    <h3 class="text-lg font-bold text-indigo-900">Kontrol Harian</h3>
+                    <p class="text-sm text-gray-500">Klik setelah jam masuk berakhir</p>
+                </div>
+                <form action="{% url 'tutup_presensi_harian' %}" method="POST" class="w-full" onsubmit="return confirm('Apakah jam masuk sudah berakhir? Sistem akan menandai siswa yang belum scan sebagai ALPHA dan mengirim WA ke semua grup.')">
+                    {% csrf_token %}
+                    <button type="submit" class="w-full px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-lg flex justify-center items-center gap-2 transition-all">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                        Tutup Presensi & Kirim Laporan
+                    </button>
+                </form>
+            </div>
         </div>
-        <form action="{% url 'tutup_presensi_harian' %}" method="POST" onsubmit="return confirm('Apakah jam masuk sudah berakhir? Sistem akan menandai siswa yang belum scan sebagai ALPHA dan mengirim WA ke semua grup.')">
-            {% csrf_token %}
-            <button type="submit" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-lg flex items-center gap-2 transition-all">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-                Tutup Presensi & Kirim Laporan
-            </button>
-        </form>
-    </div>
-    <div class="mt-2.5 h-fit w-full flex flex-col gap-2.5 md:flex-row">
-        <div class="bg-white h-40 w-full rounded-xl shadow-sm md:shadow-xl md:h-56 lg:h-72"></div>
-        <div class="bg-white h-40 w-full rounded-xl shadow-sm md:shadow-xl md:h-56 lg:h-72"></div>
     </div>
 {% endblock isi %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const UPDATE_INTERVAL = 3000; // Update setiap 3 detik
+
+        // --- HELPER 1: Ambil 2 Huruf Inisial ---
+        function getInitials(name) {
+            if (!name) return "??";
+            name = name.trim();
+            const parts = name.split(" ").filter(part => part.length > 0);
+            
+            if (parts.length === 0) return "??";
+            
+            let initials = parts[0][0]; // Huruf pertama kata pertama
+            if (parts.length > 1) {
+                initials += parts[parts.length - 1][0]; // Huruf pertama kata terakhir
+            } else if (name.length > 1) {
+                initials += name[1]; // Jika cuma 1 kata, ambil huruf kedua
+            }
+            return initials.toUpperCase();
+        }
+
+        // --- HELPER 2: Generate Warna dari Nama (Konsisten) ---
+        function getColorFromName(name) {
+            if (!name) return 'bg-gray-500';
+            const colors = [
+                'bg-red-500', 'bg-orange-500', 'bg-amber-500', 'bg-yellow-500', 
+                'bg-lime-500', 'bg-green-500', 'bg-emerald-500', 'bg-teal-500', 
+                'bg-cyan-500', 'bg-sky-500', 'bg-blue-500', 'bg-indigo-500', 
+                'bg-violet-500', 'bg-purple-500', 'bg-fuchsia-500', 'bg-pink-500', 'bg-rose-500'
+            ];
+            let hash = 0;
+            for (let i = 0; i < name.length; i++) {
+                hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            return colors[Math.abs(hash % colors.length)];
+        }
+
+        function fetchDashboardData() {
+            fetch("{% url 'dashboard_stats' %}")
+            .then(response => {
+                if (!response.ok) throw new Error("Network response was not ok");
+                return response.json();
+            })
+            .then(data => {
+                updateCounters(data.stats);
+                updateCharts(data.weekly, data.stats);
+                updateLogs(data.logs);
+            })
+            .catch(error => console.error('Gagal update dashboard:', error));
+        }
+
+        // 1. Update Kartu Statistik
+        function updateCounters(stats) {
+            const elTotal = document.getElementById('statTotal');
+            const elAbsent = document.getElementById('statAbsent');
+            const elLate = document.getElementById('statLate');
+            const elLeave = document.getElementById('statLeave');
+
+            if (elTotal) elTotal.textContent = stats.total_hadir;
+            if (elAbsent) elAbsent.textContent = stats.belum_hadir;
+            if (elLate) elLate.textContent = stats.terlambat;
+            if (elLeave) elLeave.textContent = stats.izin_sakit;
+            
+            const elTotalDesc = document.getElementById('statTotalDesc');
+            if (elTotalDesc) {
+                elTotalDesc.textContent = `${stats.persen_hadir}% dari total siswa`;
+            }
+        }
+
+        // 2. Update Grafik
+        function updateCharts(weeklyData, stats) {
+            // Bar Chart
+            weeklyData.forEach((day, index) => {
+                const barH = document.getElementById(`bar-total-${index}`);
+                const barT = document.getElementById(`bar-late-${index}`);
+                const tooltip = document.getElementById(`tooltip-${index}`);
+                
+                if(barH) barH.style.height = `${day.pct_total}%`;
+                if(barT) barT.style.height = `${day.pct_late}%`;
+                if(tooltip) tooltip.innerHTML = `${day.date || 'Hari ini'}<br>Hadir: ${day.hadir}<br>Telat: ${day.terlambat}`;
+            });
+
+            // Pie Chart
+            const pieChart = document.getElementById('pieChart');
+            const piePercent = document.getElementById('piePercent');
+            
+            if(piePercent) piePercent.textContent = `${stats.persen_hadir}%`;
+            if(pieChart) pieChart.style.background = `conic-gradient(#3B82F6 0% ${stats.persen_hadir}%, #E5E7EB ${stats.persen_hadir}% 100%)`;
+        }
+
+        // 3. Update Tabel & Feed (BAGIAN UTAMA)
+        function updateLogs(logs) {
+            const tableBody = document.getElementById('liveLogTable'); // Gunakan ID yang benar: liveLogTable
+            const feedContainer = document.getElementById('liveFeedContainer');
+            
+            if (!tableBody || !feedContainer) return;
+
+            // --- A. UPDATE TABEL TENGAH ---
+            let tableHtml = '';
+            if (logs.length === 0) {
+                tableHtml = '<tr><td colspan="4" class="px-4 py-3 text-center text-gray-400">Belum ada data.</td></tr>';
+            } else {
+                logs.forEach(log => {
+                    let badgeClass = "bg-gray-100 text-gray-800";
+                    if (log.status_code === 'H') badgeClass = "bg-green-100 text-green-800";
+                    else if (log.status_code === 'T') badgeClass = "bg-yellow-100 text-yellow-800";
+                    else badgeClass = "bg-blue-100 text-blue-800";
+
+                    tableHtml += `
+                        <tr class="bg-white border-b hover:bg-gray-50 transition">
+                            <td class="px-4 py-3 font-medium text-gray-900">${log.nama}</td>
+                            <td class="px-4 py-3 font-mono text-gray-600">${log.waktu}</td>
+                            <td class="px-4 py-3 text-gray-600">${log.kelas}</td>
+                            <td class="px-4 py-3">
+                                <span class="${badgeClass} text-xs font-medium px-2.5 py-0.5 rounded">${log.status}</span>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+            tableBody.innerHTML = tableHtml;
+
+            // --- B. UPDATE LIVE FEED KANAN (INISIAL & WARNA) ---
+            let feedHtml = '';
+            if (logs.length === 0) {
+                feedHtml = '<div class="text-center text-gray-400 py-10 text-xs">Menunggu aktivitas...</div>';
+            } else {
+                logs.forEach(log => {
+                    // Generate Inisial & Warna
+                    const initials = getInitials(log.nama);
+                    const bgClass = getColorFromName(log.nama);
+
+                    feedHtml += `
+                        <div class="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all animate-fade-in mb-2">
+                            <div class="h-10 w-10 rounded-full ${bgClass} text-white flex items-center justify-center font-bold text-xs shadow-sm flex-shrink-0 border-2 border-white ring-1 ring-gray-100">
+                                ${initials}
+                            </div>
+                            
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-bold text-gray-800 truncate">${log.nama}</p>
+                                <div class="flex justify-between items-center mt-0.5">
+                                    <span class="text-[10px] font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">${log.kelas}</span>
+                                    <span class="text-[10px] font-mono text-gray-400 flex items-center gap-1">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        ${log.waktu}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            feedContainer.innerHTML = feedHtml;
+        }
+
+        // Jalankan
+        fetchDashboardData();
+        setInterval(fetchDashboardData, UPDATE_INTERVAL);
+    });
+</script>
+{% endblock extra_js %}
+
+{% block innerstyle %}
+<style>
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+        animation: fadeIn 0.4s ease-out;
+    }
+</style>
+{% endblock innerstyle %}

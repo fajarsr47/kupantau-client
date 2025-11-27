@@ -6,6 +6,7 @@ urlpatterns = [
     #   Dashboard
     # =========================
     path('', views.index, name='index'),
+    path('api/dashboard-stats/', views.get_dashboard_stats, name='dashboard_stats'),
 
     # =========================
     #   Presensi
